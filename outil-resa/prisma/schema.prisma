@@ -1,0 +1,90 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Association {
+  id              String   @id @default(cuid())
+  nom             String
+  slug            String   @unique
+  email           String   @unique
+  password        String
+  telephone       String?
+  
+  // Licence
+  licenceActive   Boolean  @default(true)  // true pour MVP (gratuit)
+  licenceExpire   DateTime?
+  
+  // Customisation
+  logo            String?
+  couleurTheme    String   @default("#1e40af")
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  representations Representation[]
+  plansSalle      PlanSalle[]
+  
+  @@index([slug])
+}
+
+model PlanSalle {
+  id            String @id @default(cuid())
+  nom           String @default("Salle principale")
+  capaciteTotal Int    @default(100)
+  structure     Json   // { rangees: [{ id: "A", sieges: 12 }] }
+  
+  associationId String @unique  // Une asso = un plan pour MVP
+  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Representation {
+  id          String   @id @default(cuid())
+  titre       String   @default("Représentation")
+  date        DateTime
+  heure       String
+  capacite    Int
+  description String?  @db.Text
+  
+  placesOccupees Json   @default("[]")
+  
+  associationId  String
+  association    Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  reservations   Reservation[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([associationId])
+  @@index([date])
+}
+
+model Reservation {
+  id          String   @id @default(cuid())
+  prenom      String
+  nom         String
+  telephone   String
+  email       String?
+  nbPlaces    Int
+  sieges      Json
+  statut      String   @default("confirmé")
+  notes       String?  @db.Text
+  
+  representationId String
+  representation   Representation @relation(fields: [representationId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([representationId])
+  @@index([telephone])
+}
