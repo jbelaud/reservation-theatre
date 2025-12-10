@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
                 email: true,
                 telephone: true,
                 logo: true,
+                affiche: true,
                 couleurTheme: true,
                 licenceActive: true,
                 licenceExpire: true,
@@ -52,7 +53,7 @@ export async function PATCH(request: NextRequest) {
     try {
         const associationId = await getAuthenticatedAssociation(request)
         const body = await request.json()
-        const { nom, email, telephone, couleurTheme, logo } = body
+        const { nom, email, telephone, couleurTheme, logo, affiche } = body
 
         // Préparer les données à mettre à jour
         const updateData: any = {}
@@ -61,6 +62,7 @@ export async function PATCH(request: NextRequest) {
         if (telephone !== undefined) updateData.telephone = telephone
         if (couleurTheme !== undefined) updateData.couleurTheme = couleurTheme
         if (logo !== undefined) updateData.logo = logo
+        if (affiche !== undefined) updateData.affiche = affiche
 
         const association = await prisma.association.update({
             where: { id: associationId },
@@ -72,6 +74,7 @@ export async function PATCH(request: NextRequest) {
                 email: true,
                 telephone: true,
                 logo: true,
+                affiche: true,
                 couleurTheme: true
             }
         })

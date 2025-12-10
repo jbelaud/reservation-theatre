@@ -45,12 +45,11 @@ export default async function ReservationsPage() {
         }
     })
 
-    const upcomingRepresentations = await prisma.representation.findMany({
+    const allRepresentations = await prisma.representation.findMany({
         where: {
             associationId: payload.associationId,
-            date: { gte: new Date() }
         },
-        orderBy: { date: 'asc' },
+        orderBy: { date: 'desc' },
         select: {
             id: true,
             titre: true,
@@ -59,10 +58,11 @@ export default async function ReservationsPage() {
         }
     })
 
-    const formattedRepresentations = upcomingRepresentations.map(r => ({
+    const formattedRepresentations = allRepresentations.map(r => ({
         id: r.id,
         titre: r.titre,
         date: format(new Date(r.date), 'd MMM yyyy', { locale: fr }),
+        rawDate: r.date.toISOString(),
         heure: r.heure
     }))
 
@@ -76,7 +76,9 @@ export default async function ReservationsPage() {
         sieges: (r.sieges as unknown as string[]) || [],
         statut: r.statut,
         createdAt: r.createdAt.toISOString(),
+        representationId: r.representationId,
         representationTitle: r.representation.titre,
+        representationRawDate: r.representation.date.toISOString(),
         representationDate: `${format(new Date(r.representation.date), 'd MMM yyyy', { locale: fr })} à ${r.representation.heure}`
     }))
 

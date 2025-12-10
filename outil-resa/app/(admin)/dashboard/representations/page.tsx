@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/use-toast'
 import { RepresentationTable } from '@/components/representation-table'
 import {
     Dialog,
@@ -92,6 +93,8 @@ export default function RepresentationsPage() {
         setDeleteId(id)
     }
 
+    const { toast } = useToast()
+
     const handleDeleteConfirm = async () => {
         if (!deleteId) return
 
@@ -108,8 +111,16 @@ export default function RepresentationsPage() {
             // Rafraîchir la liste
             await fetchRepresentations()
             setDeleteId(null)
+            toast({
+                title: "Représentation supprimée",
+                description: "La représentation a été supprimée avec succès.",
+            })
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+            toast({
+                title: "Erreur",
+                description: err instanceof Error ? err.message : 'Erreur lors de la suppression',
+                variant: "destructive"
+            })
         } finally {
             setDeleting(false)
         }

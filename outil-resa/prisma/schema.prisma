@@ -23,6 +23,7 @@ model Association {
   
   // Customisation
   logo            String?
+  affiche         String?
   couleurTheme    String   @default("#1e40af")
   
   createdAt       DateTime @default(now())

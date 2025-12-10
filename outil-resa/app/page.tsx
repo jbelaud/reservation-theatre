@@ -2,7 +2,7 @@
 
 import { LoginModal } from '@/components/auth/login-modal'
 import { Button } from '@/components/ui/button'
-import { Mail, Theater } from 'lucide-react'
+import { Mail } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -10,11 +10,12 @@ export default function Home() {
       <div className="text-center space-y-12 p-8 max-w-4xl">
         {/* Header */}
         <div className="space-y-4">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <Theater className="w-12 h-12 text-indigo-600" />
-            <h1 className="text-6xl font-bold text-gray-900">
-              Resavo
-            </h1>
+          <div className="flex items-center justify-center mb-6">
+            <img
+              src="/resavo-logo.png"
+              alt="Resavo"
+              className="h-32 w-auto object-contain"
+            />
           </div>
           <h2 className="text-3xl font-semibold text-gray-700">
             Gestion des réservations de spectacles

@@ -19,7 +19,9 @@ export default function ParametresPage() {
         nom: '',
         email: '',
         telephone: '',
-        couleurTheme: '#1e40af'
+        couleurTheme: '#1e40af',
+        logo: '',
+        affiche: ''
     })
 
     useEffect(() => {
@@ -31,7 +33,9 @@ export default function ParametresPage() {
                     nom: data.nom || '',
                     email: data.email || '',
                     telephone: data.telephone || '',
-                    couleurTheme: data.couleurTheme || '#1e40af'
+                    couleurTheme: data.couleurTheme || '#1e40af',
+                    logo: data.logo || '',
+                    affiche: data.affiche || ''
                 })
                 setLoading(false)
             })
@@ -132,39 +136,136 @@ export default function ParametresPage() {
                     </CardContent>
                 </Card>
 
-                {/* Personnalisation */}
+                {/* Images */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Personnalisation</CardTitle>
+                        <CardTitle>Images</CardTitle>
                         <CardDescription>
-                            Couleur du thème de votre page publique
+                            Logo de l'association et affiche du spectacle en cours
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <Label htmlFor="couleur">Couleur du thème</Label>
-                            <div className="flex gap-3 items-center mt-2">
-                                <Input
-                                    id="couleur"
-                                    type="color"
-                                    value={formData.couleurTheme}
-                                    onChange={(e) => setFormData({ ...formData, couleurTheme: e.target.value })}
-                                    className="w-20 h-10 cursor-pointer"
-                                />
-                                <Input
-                                    type="text"
-                                    value={formData.couleurTheme}
-                                    onChange={(e) => setFormData({ ...formData, couleurTheme: e.target.value })}
-                                    className="flex-1"
-                                    placeholder="#1e40af"
-                                />
+                    <CardContent className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {/* Logo */}
+                            <div className="space-y-4">
+                                <Label>Logo de l'association</Label>
+                                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors relative">
+                                    {formData.logo ? (
+                                        <div className="relative group">
+                                            <img
+                                                src={formData.logo}
+                                                alt="Logo"
+                                                className="h-32 w-auto mx-auto object-contain"
+                                            />
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => setFormData({ ...formData, logo: '' })}
+                                            >
+                                                Supprimer
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="py-8 text-gray-400">
+                                            <div className="mb-2">Aucun logo</div>
+                                        </div>
+                                    )}
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        className="mt-4"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0]
+                                            if (!file) return
+
+                                            const data = new FormData()
+                                            data.append('file', file)
+
+                                            try {
+                                                const res = await fetch('/api/upload', {
+                                                    method: 'POST',
+                                                    body: data
+                                                })
+                                                const json = await res.json()
+                                                if (json.success) {
+                                                    setFormData(prev => ({ ...prev, logo: json.url }))
+                                                    toast({ title: "Logo téléchargé" })
+                                                }
+                                            } catch (err) {
+                                                toast({
+                                                    title: "Erreur",
+                                                    description: "Échec du téléchargement",
+                                                    variant: "destructive"
+                                                })
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                Cette couleur sera utilisée sur votre page publique
-                            </p>
+
+                            {/* Affiche */}
+                            <div className="space-y-4">
+                                <Label>Affiche du spectacle</Label>
+                                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors relative">
+                                    {formData.affiche ? (
+                                        <div className="relative group">
+                                            <img
+                                                src={formData.affiche}
+                                                alt="Affiche"
+                                                className="h-48 w-auto mx-auto object-contain shadow-md"
+                                            />
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => setFormData({ ...formData, affiche: '' })}
+                                            >
+                                                Supprimer
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="py-16 text-gray-400">
+                                            <div className="mb-2">Aucune affiche</div>
+                                        </div>
+                                    )}
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        className="mt-4"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0]
+                                            if (!file) return
+
+                                            const data = new FormData()
+                                            data.append('file', file)
+
+                                            try {
+                                                const res = await fetch('/api/upload', {
+                                                    method: 'POST',
+                                                    body: data
+                                                })
+                                                const json = await res.json()
+                                                if (json.success) {
+                                                    setFormData(prev => ({ ...prev, affiche: json.url }))
+                                                    toast({ title: "Affiche téléchargée" })
+                                                }
+                                            } catch (err) {
+                                                toast({
+                                                    title: "Erreur",
+                                                    description: "Échec du téléchargement",
+                                                    variant: "destructive"
+                                                })
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
+
+
 
                 {/* URL publique */}
                 <Card>

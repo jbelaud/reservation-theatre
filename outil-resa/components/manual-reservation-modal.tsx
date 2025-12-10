@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/tooltip'
 import { Plus, HelpCircle } from 'lucide-react'
 import { SeatingPlanSelector } from '@/components/seating-plan-selector'
+import { useToast } from '@/components/ui/use-toast'
 
 interface RepresentationOption {
     id: string
@@ -50,6 +51,8 @@ export function ManualReservationModal({ representationId, representations, onSu
         email: '',
         nbPlaces: 1,
     })
+
+    const { toast } = useToast()
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -90,6 +93,11 @@ export function ManualReservationModal({ representationId, representations, onSu
                 return
             }
 
+            toast({
+                title: "Réservation ajoutée",
+                description: "La réservation a été créée avec succès.",
+            })
+
             setOpen(false)
             setFormData({
                 prenom: '',
@@ -104,6 +112,11 @@ export function ManualReservationModal({ representationId, representations, onSu
             onSuccess()
         } catch (err) {
             setError('Erreur de connexion au serveur')
+            toast({
+                title: "Erreur",
+                description: "Erreur de connexion au serveur",
+                variant: "destructive"
+            })
         } finally {
             setLoading(false)
         }
