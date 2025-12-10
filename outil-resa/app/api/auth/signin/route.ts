@@ -6,6 +6,7 @@ import { verifyPassword, generateToken } from '@/lib/auth'
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
+        console.log('User signin attempt:', body.email)
         const { email, password } = body
 
         if (!email || !password) {
@@ -37,9 +38,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Générer token
-        const token = generateToken(association.id)
+        const token = await generateToken(association.id)
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             association: {
                 id: association.id,
                 nom: association.nom,
@@ -48,6 +49,17 @@ export async function POST(request: NextRequest) {
             },
             token
         })
+
+        // Définir le cookie
+        response.cookies.set('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 60 * 60 * 24 * 30, // 30 jours
+            path: '/'
+        })
+
+        return response
 
     } catch (error) {
         console.error('Signin error:', error)

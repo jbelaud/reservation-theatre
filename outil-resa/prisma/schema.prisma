@@ -34,11 +34,24 @@ model Association {
   @@index([slug])
 }
 
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  nom       String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([email])
+}
+
 model PlanSalle {
   id            String @id @default(cuid())
   nom           String @default("Salle principale")
   capaciteTotal Int    @default(100)
   structure     Json   // { rangees: [{ id: "A", sieges: 12 }] }
+  configuration String @default("standard") // "standard" ou "french" (impairs gauche, pairs droite)
   
   associationId String @unique  // Une asso = un plan pour MVP
   association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
