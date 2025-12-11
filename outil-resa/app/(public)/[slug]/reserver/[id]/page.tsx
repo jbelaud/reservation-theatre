@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { Accessibility } from 'lucide-react'
 
 export default function ReservationPage({
     params
@@ -27,7 +29,8 @@ export default function ReservationPage({
         nom: '',
         telephone: '',
         email: '',
-        nbPlaces: 1
+        nbPlaces: 1,
+        pmr: false
     })
 
     useEffect(() => {
@@ -145,8 +148,28 @@ export default function ReservationPage({
                                     <option key={n} value={n}>{n} place{n > 1 ? 's' : ''}</option>
                                 ))}
                             </select>
-                            <p className="text-xs text-slate-500 mt-1">
-                                Nous placerons automatiquement vos sièges côte à côte.
+
+                            <div className="mt-4 flex items-start space-x-2 bg-slate-50 p-3 rounded-lg border">
+                                <Checkbox
+                                    id="pmr"
+                                    checked={formData.pmr}
+                                    onCheckedChange={(checked) => setFormData({ ...formData, pmr: checked as boolean })}
+                                />
+                                <div className="grid gap-1.5 leading-none">
+                                    <Label htmlFor="pmr" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
+                                        <Accessibility className="h-4 w-4" />
+                                        Besoin d'un accès PMR
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Cochez cette case si vous avez besoin de places accessibles aux fauteuils roulants.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <p className="text-xs text-slate-500 mt-2">
+                                {formData.pmr
+                                    ? "♿ Nous rechercherons spécifiquement des places accessibles pour votre groupe."
+                                    : "Nous placerons automatiquement vos sièges côte à côte."}
                             </p>
                         </div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Save, Armchair, Info, Zap, Edit3, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Save, Armchair, Info, Zap, Edit3, ChevronDown, Accessibility } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,6 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 interface Rangee {
     id: string
     sieges: number
+    pmr?: number[] // Liste des numéros de sièges PMR (ex: [1, 2, 20])
 }
 
 interface SeatingPlanEditorProps {
@@ -32,13 +33,14 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
     const [globalSeats, setGlobalSeats] = useState<string>('')
 
     const totalPlaces = rangees.reduce((acc, r) => acc + r.sieges, 0)
+    const totalPmr = rangees.reduce((acc, r) => acc + (r.pmr?.length || 0), 0)
 
     const handleAddRow = () => {
         // Générer ID suivant (A, B, C...)
         const lastId = rangees.length > 0 ? rangees[rangees.length - 1].id : '@' // @ est avant A
         const nextId = String.fromCharCode(lastId.charCodeAt(0) + 1)
 
-        setRangees([...rangees, { id: nextId, sieges: 10 }])
+        setRangees([...rangees, { id: nextId, sieges: 10, pmr: [] }])
     }
 
     // Ajout rapide de plusieurs rangées
@@ -53,7 +55,7 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
 
         for (let i = 0; i < count; i++) {
             const nextId = String.fromCharCode(lastId.charCodeAt(0) + 1)
-            newRangees.push({ id: nextId, sieges: seats })
+            newRangees.push({ id: nextId, sieges: seats, pmr: [] })
             lastId = nextId
         }
 
@@ -78,6 +80,18 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
         const sieges = parseInt(value) || 0
         const newRangees = [...rangees]
         newRangees[index].sieges = sieges
+        setRangees(newRangees)
+    }
+
+    const handleChangePmr = (index: number, value: string) => {
+        // Parser "1, 2, 3" en [1, 2, 3]
+        const pmrSeats = value
+            .split(',')
+            .map(s => parseInt(s.trim()))
+            .filter(n => !isNaN(n) && n > 0)
+
+        const newRangees = [...rangees]
+        newRangees[index].pmr = pmrSeats
         setRangees(newRangees)
     }
 
@@ -234,39 +248,55 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                                 </AccordionTrigger>
                                 <AccordionContent className="space-y-3 pt-3">
                                     <p className="text-xs text-gray-600 mb-3">
-                                        Modifiez chaque rangée individuellement si nécessaire
+                                        Définissez les sièges et les places PMR (numéros séparés par des virgules)
                                     </p>
                                     {rangees.map((rangee, index) => (
-                                        <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <div className="w-20">
-                                                <Label className="text-xs">Rangée</Label>
-                                                <Input
-                                                    value={rangee.id}
-                                                    onChange={(e) => handleChangeId(index, e.target.value)}
-                                                    className="font-bold text-center bg-white"
-                                                    maxLength={2}
-                                                />
-                                            </div>
-                                            <div className="flex-1">
-                                                <Label className="text-xs">Nombre de sièges</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={rangee.sieges}
-                                                    onChange={(e) => handleChangeSieges(index, e.target.value)}
-                                                    min={1}
-                                                    max={50}
-                                                    className="bg-white"
-                                                />
-                                            </div>
-                                            <div className="pt-5">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                    onClick={() => handleRemoveRow(index)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                        <div key={index} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-20">
+                                                    <Label className="text-xs">Rangée</Label>
+                                                    <Input
+                                                        value={rangee.id}
+                                                        onChange={(e) => handleChangeId(index, e.target.value)}
+                                                        className="font-bold text-center bg-white"
+                                                        maxLength={2}
+                                                    />
+                                                </div>
+                                                <div className="flex-1 space-y-2">
+                                                    <div>
+                                                        <Label className="text-xs">Nombre de sièges</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={rangee.sieges}
+                                                            onChange={(e) => handleChangeSieges(index, e.target.value)}
+                                                            min={1}
+                                                            max={50}
+                                                            className="bg-white"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-xs flex items-center gap-1 text-purple-700">
+                                                            <Accessibility className="h-3 w-3" /> Sièges PMR
+                                                        </Label>
+                                                        <Input
+                                                            type="text"
+                                                            value={rangee.pmr?.join(', ') || ''}
+                                                            onChange={(e) => handleChangePmr(index, e.target.value)}
+                                                            placeholder="Ex: 1, 2"
+                                                            className="bg-white text-sm"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="pt-5">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={() => handleRemoveRow(index)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -280,9 +310,17 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                     </Button>
 
                     <div className="pt-4 border-t mt-4">
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="font-semibold">Capacité totale :</span>
-                            <span className="text-xl font-bold text-blue-600">{totalPlaces} places</span>
+                        <div className="flex flex-col gap-1 mb-4">
+                            <div className="flex justify-between items-center">
+                                <span className="font-semibold">Capacité totale :</span>
+                                <span className="text-xl font-bold text-blue-600">{totalPlaces} places</span>
+                            </div>
+                            {totalPmr > 0 && (
+                                <div className="flex justify-between items-center text-sm text-purple-700">
+                                    <span className="flex items-center gap-1"><Accessibility className="h-3 w-3" /> Dont PMR :</span>
+                                    <span className="font-semibold">{totalPmr} places</span>
+                                </div>
+                            )}
                         </div>
                         <Button className="w-full" onClick={handleSave} disabled={loading}>
                             <Save className="mr-2 h-4 w-4" />
@@ -351,13 +389,17 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                                                         </div>
                                                     )
                                                 }
+
+                                                const isPmr = typeof num === 'number' && rangee.pmr?.includes(num)
+
                                                 return (
                                                     <div
                                                         key={i}
-                                                        className="w-6 h-6 bg-blue-500 rounded-t-md opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] font-bold"
-                                                        title={`${rangee.id}${num}`}
+                                                        className={`w-6 h-6 rounded-t-md opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] font-bold ${isPmr ? 'bg-purple-500 text-white' : 'bg-blue-500 text-white'
+                                                            }`}
+                                                        title={`${rangee.id}${num} ${isPmr ? '(PMR)' : ''}`}
                                                     >
-                                                        {num}
+                                                        {isPmr ? <Accessibility className="h-3 w-3" /> : num}
                                                     </div>
                                                 )
                                             })}
@@ -368,8 +410,19 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                             })}
                         </div>
 
+                        <div className="mt-8 flex gap-4 text-xs text-slate-400">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                                <span>Standard</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
+                                <span>PMR (Mobilité Réduite)</span>
+                            </div>
+                        </div>
+
                         {configuration === 'french' && (
-                            <div className="mt-6 text-xs text-slate-400 text-center">
+                            <div className="mt-2 text-xs text-slate-400 text-center">
                                 <p>← Impairs (gauche) | Allée | Pairs (droite) →</p>
                             </div>
                         )}

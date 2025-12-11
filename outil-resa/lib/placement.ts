@@ -2,13 +2,16 @@ interface PlanSalle {
     rangees: Array<{
         id: string
         sieges: number
+        pmr?: number[]
     }>
+    configuration?: 'standard' | 'french'
 }
 
 export function trouverPlaces(
     nbPlaces: number,
     plan: PlanSalle,
-    placesOccupees: string[]
+    placesOccupees: string[],
+    pmrDemandee: boolean = false
 ): string[] | null {
 
     const placesLibres = new Set<string>()
@@ -22,27 +25,41 @@ export function trouverPlaces(
         }
     })
 
+    const isFrench = plan.configuration === 'french'
+
     // Stratégie 1: Une seule rangée
     for (const rangee of plan.rangees) {
-        const places = chercherConsecutifsCentre(rangee, nbPlaces, placesLibres)
+        let places: string[]
+        if (isFrench) {
+            places = chercherPlacesFrancaises(rangee, nbPlaces, placesLibres, pmrDemandee)
+        } else {
+            places = chercherConsecutifsCentre(rangee, nbPlaces, placesLibres, pmrDemandee)
+        }
+
         if (places.length === nbPlaces) {
             return places
         }
     }
 
-    // Stratégie 2: Deux rangées si pair
+    // Stratégie 2: Deux rangées si pair (et petit groupe)
+    // NOTE: Pour PMR, on évite généralement de séparer sur 2 rangées sauf si nécessaire.
+    // Mais si le code le permet, pourquoi pas.
     if (nbPlaces % 2 === 0 && nbPlaces <= 6) {
-        const places = chercherSur2Rangees(plan, nbPlaces, placesLibres)
+        const places = chercherSur2Rangees(plan, nbPlaces, placesLibres, isFrench, pmrDemandee)
         if (places) return places
     }
 
     return null
 }
 
+/**
+ * Mode Standard : Cherche places consécutives (1, 2, 3...) depuis le centre
+ */
 function chercherConsecutifsCentre(
-    rangee: { id: string; sieges: number },
+    rangee: { id: string; sieges: number; pmr?: number[] },
     nbPlaces: number,
-    placesLibres: Set<string>
+    placesLibres: Set<string>,
+    pmrDemandee: boolean
 ): string[] {
 
     const centre = Math.ceil(rangee.sieges / 2)
@@ -64,11 +81,101 @@ function chercherConsecutifsCentre(
         let valide = true
 
         for (let i = 0; i < nbPlaces; i++) {
-            const placeId = `${rangee.id}${debut + i}`
+            const num = debut + i
+            const placeId = `${rangee.id}${num}`
+
+            // Vérification disponibilité
             if (!placesLibres.has(placeId)) {
                 valide = false
                 break
             }
+
+            // Vérification PMR
+            const isPmr = rangee.pmr?.includes(num)
+            if (pmrDemandee && !isPmr) {
+                valide = false
+                break
+            }
+            if (!pmrDemandee && isPmr) {
+                valide = false
+                break
+            }
+
+            places.push(placeId)
+        }
+
+        if (valide) return places
+    }
+
+    return []
+}
+
+/**
+ * Mode Français : Cherche places de même parité (1, 3, 5...) depuis le centre (1, 2)
+ */
+function chercherPlacesFrancaises(
+    rangee: { id: string; sieges: number; pmr?: number[] },
+    nbPlaces: number,
+    placesLibres: Set<string>,
+    pmrDemandee: boolean
+): string[] {
+    // 1. Générer les séries possibles
+    const maxSiege = rangee.sieges
+
+    // Série Impaire (Côté Jardin/Cour selon convention) : 1, 3, 5...
+    const placesImpaires = findBestBlockInParity(rangee, 1, maxSiege, nbPlaces, placesLibres, pmrDemandee)
+
+    // Série Paire : 2, 4, 6...
+    const placesPaires = findBestBlockInParity(rangee, 2, maxSiege, nbPlaces, placesLibres, pmrDemandee)
+
+    // Si on a trouvé des deux côtés, on prend le "meilleur" (somme des numéros la plus basse = plus proche du centre)
+    if (placesImpaires.length > 0 && placesPaires.length > 0) {
+        const scoreImpair = placesImpaires.reduce((sum, id) => sum + parseInt(id.replace(rangee.id, '')), 0)
+        const scorePair = placesPaires.reduce((sum, id) => sum + parseInt(id.replace(rangee.id, '')), 0)
+        return scoreImpair <= scorePair ? placesImpaires : placesPaires
+    }
+
+    return placesImpaires.length > 0 ? placesImpaires : placesPaires
+}
+
+function findBestBlockInParity(
+    rangee: { id: string; sieges: number; pmr?: number[] },
+    startNum: number,
+    maxNum: number,
+    targetCount: number,
+    placesLibres: Set<string>,
+    pmrDemandee: boolean
+): string[] {
+    // On itère par pas de 2 : 1, 3, 5... ou 2, 4, 6...
+
+    for (let current = startNum; current <= maxNum; current += 2) {
+        // Vérifier limites
+        const lastSeatNum = current + (targetCount - 1) * 2
+        if (lastSeatNum > maxNum) break
+
+        const places: string[] = []
+        let valide = true
+
+        for (let k = 0; k < targetCount; k++) {
+            const seatNum = current + k * 2
+            const placeId = `${rangee.id}${seatNum}`
+
+            if (!placesLibres.has(placeId)) {
+                valide = false
+                break
+            }
+
+            // Validation PMR
+            const isPmr = rangee.pmr?.includes(seatNum)
+            if (pmrDemandee && !isPmr) {
+                valide = false
+                break
+            }
+            if (!pmrDemandee && isPmr) {
+                valide = false
+                break
+            }
+
             places.push(placeId)
         }
 
@@ -81,7 +188,9 @@ function chercherConsecutifsCentre(
 function chercherSur2Rangees(
     plan: PlanSalle,
     nbPlaces: number,
-    placesLibres: Set<string>
+    placesLibres: Set<string>,
+    isFrench: boolean = false,
+    pmrDemandee: boolean
 ): string[] | null {
 
     const parRangee = nbPlaces / 2
@@ -92,18 +201,45 @@ function chercherSur2Rangees(
 
         const maxCol = Math.min(rangee1.sieges, rangee2.sieges)
 
-        for (let col = 1; col <= maxCol - parRangee + 1; col++) {
+        const step = isFrench ? 2 : 1
+
+        let colsToCheck: number[] = []
+        if (isFrench) {
+            const odds = []; for (let c = 1; c <= maxCol; c += 2) odds.push(c)
+            const evens = []; for (let c = 2; c <= maxCol; c += 2) evens.push(c)
+            colsToCheck = [...odds, ...evens].sort((a, b) => a - b)
+        } else {
+            for (let c = 1; c <= maxCol; c++) colsToCheck.push(c)
+        }
+
+        for (const col of colsToCheck) {
+            const lastOffset = (parRangee - 1) * step
+            if (col + lastOffset > rangee1.sieges || col + lastOffset > rangee2.sieges) continue
+
             const places: string[] = []
             let valide = true
 
             for (let j = 0; j < parRangee; j++) {
-                const place1 = `${rangee1.id}${col + j}`
-                const place2 = `${rangee2.id}${col + j}`
+                const currentNum = col + j * step
 
+                const place1 = `${rangee1.id}${currentNum}`
+                const place2 = `${rangee2.id}${currentNum}`
+
+                // Check libre
                 if (!placesLibres.has(place1) || !placesLibres.has(place2)) {
-                    valide = false
-                    break
+                    valide = false; break
                 }
+
+                // Check PMR
+                const isPmr1 = rangee1.pmr?.includes(currentNum)
+                const isPmr2 = rangee2.pmr?.includes(currentNum)
+
+                if (pmrDemandee) {
+                    if (!isPmr1 || !isPmr2) { valide = false; break }
+                } else {
+                    if (isPmr1 || isPmr2) { valide = false; break }
+                }
+
                 places.push(place1, place2)
             }
 

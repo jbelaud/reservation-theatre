@@ -253,3 +253,9 @@ Ce document regroupe les recommandations d'améliorations UX/UI pour Resavo, cla
 
 **Dernière mise à jour** : 3 décembre 2024
 **Auteur** : Audit UX/UI Resavo
+
+
+resavo:
+
+- revoir le plan de salle pour la réservation
+- revoir le fichier excel en google sheet

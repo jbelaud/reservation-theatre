@@ -5,7 +5,7 @@ import { trouverPlaces } from '@/lib/placement'
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { representationId, prenom, nom, telephone, email, nbPlaces, sieges } = body
+        const { representationId, prenom, nom, telephone, email, nbPlaces, sieges, pmr } = body
 
         // 1. Validation basique
         if (!representationId || !prenom || !nom || !telephone || !nbPlaces) {
@@ -88,12 +88,17 @@ export async function POST(request: NextRequest) {
             const placesAuto = trouverPlaces(
                 nbPlaces,
                 structurePlan,
-                placesOccupeesActuelles
+                placesOccupeesActuelles,
+                pmr || false // Activer le mode PMR si demandé
             )
 
             if (!placesAuto) {
+                const msg = pmr
+                    ? 'Aucune place PMR disponible pour ce nombre de personnes. Essayez de réduire le nombre ou contacter l\'association.'
+                    : 'Impossible de trouver des places contiguës. Essayez avec moins de places ou sélectionnez manuellement.'
+
                 return NextResponse.json(
-                    { error: 'Impossible de trouver des places contiguës. Essayez avec moins de places ou sélectionnez manuellement.' },
+                    { error: msg },
                     { status: 400 }
                 )
             }
@@ -113,7 +118,9 @@ export async function POST(request: NextRequest) {
                     nbPlaces,
                     sieges: placesAttribuees,
                     statut: 'confirmé',
-                    representationId
+                    representationId,
+                    // Note: on pourrait stocker le faite que c'est une résa PMR dans 'notes' ou un nouveau champ
+                    notes: pmr ? 'Réservation PMR' : undefined
                 }
             })
 

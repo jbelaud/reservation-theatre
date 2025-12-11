@@ -20,7 +20,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Plus, HelpCircle } from 'lucide-react'
+import { Plus, HelpCircle, Accessibility } from 'lucide-react'
 import { SeatingPlanSelector } from '@/components/seating-plan-selector'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -50,6 +50,7 @@ export function ManualReservationModal({ representationId, representations, onSu
         telephone: '',
         email: '',
         nbPlaces: 1,
+        pmr: false
     })
 
     const { toast } = useToast()
@@ -89,6 +90,15 @@ export function ManualReservationModal({ representationId, representations, onSu
             const data = await res.json()
 
             if (!res.ok) {
+                // Gestion spécifique pour PMR ou Erreur placement auto
+                // Si erreur liée au placement (PMR ou juste pas de place contiguë) et qu'on n'est pas déjà en manuel
+                if (!manualSelection && data.error && (data.error.includes('PMR') || data.error.includes('places contiguës') || data.error.includes('Impossible'))) {
+                    setError('Placement automatique impossible. Veuillez sélectionner les sièges manuellement sur le plan.')
+                    setManualSelection(true) // Basculer automatiquement en manuel
+                    setLoading(false)
+                    return
+                }
+
                 setError(data.error || 'Erreur lors de la réservation')
                 return
             }
@@ -105,6 +115,7 @@ export function ManualReservationModal({ representationId, representations, onSu
                 telephone: '',
                 email: '',
                 nbPlaces: 1,
+                pmr: false
             })
             setManualSelection(false)
             setSelectedSeats([])
@@ -217,10 +228,24 @@ export function ManualReservationModal({ representationId, representations, onSu
                                 </option>
                             ))}
                         </select>
+
+                        <div className="mt-3 flex items-start space-x-2">
+                            <Checkbox
+                                id="pmr-admin"
+                                checked={formData.pmr}
+                                onCheckedChange={(checked) => setFormData({ ...formData, pmr: checked as boolean })}
+                            />
+                            <div className="grid gap-1.5 leading-none">
+                                <Label htmlFor="pmr-admin" className="text-sm font-medium leading-none flex items-center gap-2 cursor-pointer">
+                                    <Accessibility className="h-4 w-4" />
+                                    Accès PMR / Fauteuil
+                                </Label>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Option de sélection manuelle */}
-                    <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200 mt-2">
                         <Checkbox
                             id="manual-selection"
                             checked={manualSelection}
@@ -240,7 +265,7 @@ export function ManualReservationModal({ representationId, representations, onSu
                                 <TooltipContent className="max-w-xs">
                                     <p className="text-sm">
                                         💡 <strong>Conseil :</strong> Laissez l'algorithme choisir automatiquement pour gagner du temps.
-                                        Activez cette option uniquement pour des demandes spécifiques (VIP, premier rang, etc.)
+                                        Activez cette option si l'algorithme ne trouve pas de places ou pour des demandes spécifiques.
                                     </p>
                                 </TooltipContent>
                             </Tooltip>
@@ -259,7 +284,7 @@ export function ManualReservationModal({ representationId, representations, onSu
                     )}
 
                     {error && (
-                        <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">
+                        <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200 mt-2">
                             {error}
                         </div>
                     )}

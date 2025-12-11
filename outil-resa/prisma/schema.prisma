@@ -70,6 +70,8 @@ model Representation {
   description String?  @db.Text
   
   placesOccupees Json   @default("[]")
+  placesPmr      Json   @default("[]") // Liste des IDs de sièges PMR
+  statut         String @default("planifie") // planifie, annule, termine
   
   associationId  String
   association    Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
