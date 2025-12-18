@@ -35,15 +35,37 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
             // Récupérer le plan de salle
             const planRes = await fetch('/api/plan-salle')
             const planData = await planRes.json()
+
+            // Parser la structure (peut être un String en SQLite ou un Object en Postgres)
+            let structure = planData.structure
+            if (typeof structure === 'string') {
+                try {
+                    structure = JSON.parse(structure)
+                } catch {
+                    structure = { rangees: [] }
+                }
+            }
+
             setPlanStructure({
-                rangees: planData.structure.rangees,
-                configuration: planData.configuration || 'standard'
+                rangees: structure?.rangees || [],
+                configuration: structure?.configuration || planData.configuration || 'standard'
             })
 
             // Récupérer la représentation pour les places occupées
             const repRes = await fetch(`/api/representations/${representationId}`)
             const repData = await repRes.json()
-            setOccupiedSeats(repData.placesOccupees || [])
+
+            // Parser les places occupées (peut être un String en SQLite)
+            let placesOccupees = repData.placesOccupees
+            if (typeof placesOccupees === 'string') {
+                try {
+                    placesOccupees = JSON.parse(placesOccupees)
+                } catch {
+                    placesOccupees = []
+                }
+            }
+
+            setOccupiedSeats(placesOccupees || [])
         } catch (error) {
             console.error('Erreur chargement plan:', error)
         } finally {
@@ -174,7 +196,11 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
 
                 {/* Rangées */}
                 <div className="space-y-2">
-                    {planStructure.rangees.map((rangee) => {
+                    {(!planStructure.rangees || planStructure.rangees.length === 0) ? (
+                        <div className="text-center text-gray-400 py-8">
+                            Aucune rangée configurée. Veuillez d'abord configurer le plan de salle.
+                        </div>
+                    ) : planStructure.rangees.map((rangee) => {
                         const seats = generateSeatIds(rangee.id, rangee.sieges, configuration)
 
                         return (

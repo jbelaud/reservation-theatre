@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { prisma } from '@/lib/prisma'
+import { parseSieges } from '@/lib/json-helpers'
 import { verifyToken } from '@/lib/auth-edge'
 import { ReservationsClient } from './reservations-client'
 import { DashboardHeader } from '@/components/admin/dashboard-header'
@@ -20,43 +21,46 @@ export default async function ReservationsPage() {
         redirect('/connexion')
     }
 
-    const association = await prisma.association.findUnique({
-        where: { id: payload.associationId },
-        select: { nom: true }
-    })
+    // ⚡ OPTIMISATION: Exécuter toutes les requêtes en parallèle
+    const [association, reservations, allRepresentations] = await Promise.all([
+        prisma.association.findUnique({
+            where: { id: payload.associationId },
+            select: { nom: true }
+        }),
 
-    const reservations = await prisma.reservation.findMany({
-        where: {
-            representation: {
-                associationId: payload.associationId
-            }
-        },
-        include: {
-            representation: {
-                select: {
-                    titre: true,
-                    date: true,
-                    heure: true
+        prisma.reservation.findMany({
+            where: {
+                representation: {
+                    associationId: payload.associationId
                 }
+            },
+            include: {
+                representation: {
+                    select: {
+                        titre: true,
+                        date: true,
+                        heure: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
             }
-        },
-        orderBy: {
-            createdAt: 'desc'
-        }
-    })
+        }),
 
-    const allRepresentations = await prisma.representation.findMany({
-        where: {
-            associationId: payload.associationId,
-        },
-        orderBy: { date: 'desc' },
-        select: {
-            id: true,
-            titre: true,
-            date: true,
-            heure: true
-        }
-    })
+        prisma.representation.findMany({
+            where: {
+                associationId: payload.associationId,
+            },
+            orderBy: { date: 'desc' },
+            select: {
+                id: true,
+                titre: true,
+                date: true,
+                heure: true
+            }
+        })
+    ])
 
     const formattedRepresentations = allRepresentations.map(r => ({
         id: r.id,
@@ -73,7 +77,7 @@ export default async function ReservationsPage() {
         telephone: r.telephone,
         email: r.email || undefined,
         nbPlaces: r.nbPlaces,
-        sieges: (r.sieges as unknown as string[]) || [],
+        sieges: parseSieges(r.sieges),
         statut: r.statut,
         createdAt: r.createdAt.toISOString(),
         representationId: r.representationId,

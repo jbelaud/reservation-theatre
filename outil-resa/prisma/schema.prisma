@@ -4,10 +4,18 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ⚡ SQLite - Base de données locale ultra-rapide
+// Pour revenir à PostgreSQL/Neon, décommentez ci-dessous et commentez SQLite
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
+
+// BACKUP PostgreSQL (Neon) - Décommenter pour revenir en arrière
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL_NEON")
+// }
 
 model Association {
   id              String   @id @default(cuid())
@@ -31,8 +39,6 @@ model Association {
   
   representations Representation[]
   plansSalle      PlanSalle[]
-  
-  @@index([slug])
 }
 
 model Admin {
@@ -43,16 +49,14 @@ model Admin {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  @@index([email])
 }
 
 model PlanSalle {
   id            String @id @default(cuid())
   nom           String @default("Salle principale")
   capaciteTotal Int    @default(100)
-  structure     Json   // { rangees: [{ id: "A", sieges: 12 }] }
-  configuration String @default("standard") // "standard" ou "french" (impairs gauche, pairs droite)
+  structure     String // JSON stocké en String pour SQLite
+  configuration String @default("standard") // "standard" ou "french"
   
   associationId String @unique  // Une asso = un plan pour MVP
   association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
@@ -67,11 +71,11 @@ model Representation {
   date        DateTime
   heure       String
   capacite    Int
-  description String?  @db.Text
+  description String?
   
-  placesOccupees Json   @default("[]")
-  placesPmr      Json   @default("[]") // Liste des IDs de sièges PMR
-  statut         String @default("planifie") // planifie, annule, termine
+  placesOccupees String   @default("[]") // JSON en String pour SQLite
+  placesPmr      String   @default("[]") // JSON en String pour SQLite
+  statut         String   @default("planifie")
   
   associationId  String
   association    Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
@@ -79,9 +83,6 @@ model Representation {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  @@index([associationId])
-  @@index([date])
 }
 
 model Reservation {
@@ -91,16 +92,13 @@ model Reservation {
   telephone   String
   email       String?
   nbPlaces    Int
-  sieges      Json
+  sieges      String   // JSON en String pour SQLite
   statut      String   @default("confirmé")
-  notes       String?  @db.Text
+  notes       String?
   
   representationId String
   representation   Representation @relation(fields: [representationId], references: [id], onDelete: Cascade)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  @@index([representationId])
-  @@index([telephone])
 }

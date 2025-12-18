@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
         // Création des représentations en transaction
         const representations = await prisma.$transaction(
-            validatedData.dates.map((dateStr) => 
+            validatedData.dates.map((dateStr) =>
                 prisma.representation.create({
                     data: {
                         titre: validatedData.titre,
@@ -81,13 +81,19 @@ export async function GET(request: NextRequest) {
 
         // Calcul des places restantes pour chaque représentation
         const representationsWithStats = representations.map((rep: any) => {
-            const placesOccupeesArray = Array.isArray(rep.placesOccupees)
-                ? rep.placesOccupees
-                : []
+            // Parse les places occupées (String JSON en SQLite)
+            let placesOccupeesArray: string[] = []
+            if (typeof rep.placesOccupees === 'string') {
+                try { placesOccupeesArray = JSON.parse(rep.placesOccupees) } catch { }
+            } else if (Array.isArray(rep.placesOccupees)) {
+                placesOccupeesArray = rep.placesOccupees
+            }
+
             const placesRestantes = rep.capacite - placesOccupeesArray.length
 
             return {
                 ...rep,
+                placesOccupees: placesOccupeesArray, // Retourner comme array
                 nbReservations: rep._count.reservations,
                 placesRestantes,
                 tauxRemplissage: Math.round((placesOccupeesArray.length / rep.capacite) * 100),

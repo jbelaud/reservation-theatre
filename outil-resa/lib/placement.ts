@@ -11,7 +11,7 @@ export function trouverPlaces(
     nbPlaces: number,
     plan: PlanSalle,
     placesOccupees: string[],
-    pmrDemandee: boolean = false
+    nbPmr: number = 0
 ): string[] | null {
 
     const placesLibres = new Set<string>()
@@ -31,9 +31,9 @@ export function trouverPlaces(
     for (const rangee of plan.rangees) {
         let places: string[]
         if (isFrench) {
-            places = chercherPlacesFrancaises(rangee, nbPlaces, placesLibres, pmrDemandee)
+            places = chercherPlacesFrancaises(rangee, nbPlaces, placesLibres, nbPmr)
         } else {
-            places = chercherConsecutifsCentre(rangee, nbPlaces, placesLibres, pmrDemandee)
+            places = chercherConsecutifsCentre(rangee, nbPlaces, placesLibres, nbPmr)
         }
 
         if (places.length === nbPlaces) {
@@ -42,10 +42,8 @@ export function trouverPlaces(
     }
 
     // Stratégie 2: Deux rangées si pair (et petit groupe)
-    // NOTE: Pour PMR, on évite généralement de séparer sur 2 rangées sauf si nécessaire.
-    // Mais si le code le permet, pourquoi pas.
     if (nbPlaces % 2 === 0 && nbPlaces <= 6) {
-        const places = chercherSur2Rangees(plan, nbPlaces, placesLibres, isFrench, pmrDemandee)
+        const places = chercherSur2Rangees(plan, nbPlaces, placesLibres, isFrench, nbPmr)
         if (places) return places
     }
 
@@ -59,7 +57,7 @@ function chercherConsecutifsCentre(
     rangee: { id: string; sieges: number; pmr?: number[] },
     nbPlaces: number,
     placesLibres: Set<string>,
-    pmrDemandee: boolean
+    nbPmr: number
 ): string[] {
 
     const centre = Math.ceil(rangee.sieges / 2)
@@ -78,6 +76,7 @@ function chercherConsecutifsCentre(
         if (debut + nbPlaces - 1 > rangee.sieges) continue
 
         const places: string[] = []
+        let foundPmrCount = 0
         let valide = true
 
         for (let i = 0; i < nbPlaces; i++) {
@@ -90,18 +89,23 @@ function chercherConsecutifsCentre(
                 break
             }
 
-            // Vérification PMR
-            const isPmr = rangee.pmr?.includes(num)
-            if (pmrDemandee && !isPmr) {
-                valide = false
-                break
-            }
-            if (!pmrDemandee && isPmr) {
-                valide = false
-                break
+            // Comptage PMR
+            if (rangee.pmr?.includes(num)) {
+                foundPmrCount++
             }
 
             places.push(placeId)
+        }
+
+        if (valide) {
+            // Règles PMR
+            if (nbPmr > 0) {
+                // Si demande PMR : il faut au moins le nombre demandé
+                if (foundPmrCount < nbPmr) valide = false
+            } else {
+                // Si pas de demande PMR : on ne doit pas prendre de place PMR
+                if (foundPmrCount > 0) valide = false
+            }
         }
 
         if (valide) return places
@@ -117,16 +121,16 @@ function chercherPlacesFrancaises(
     rangee: { id: string; sieges: number; pmr?: number[] },
     nbPlaces: number,
     placesLibres: Set<string>,
-    pmrDemandee: boolean
+    nbPmr: number
 ): string[] {
     // 1. Générer les séries possibles
     const maxSiege = rangee.sieges
 
     // Série Impaire (Côté Jardin/Cour selon convention) : 1, 3, 5...
-    const placesImpaires = findBestBlockInParity(rangee, 1, maxSiege, nbPlaces, placesLibres, pmrDemandee)
+    const placesImpaires = findBestBlockInParity(rangee, 1, maxSiege, nbPlaces, placesLibres, nbPmr)
 
     // Série Paire : 2, 4, 6...
-    const placesPaires = findBestBlockInParity(rangee, 2, maxSiege, nbPlaces, placesLibres, pmrDemandee)
+    const placesPaires = findBestBlockInParity(rangee, 2, maxSiege, nbPlaces, placesLibres, nbPmr)
 
     // Si on a trouvé des deux côtés, on prend le "meilleur" (somme des numéros la plus basse = plus proche du centre)
     if (placesImpaires.length > 0 && placesPaires.length > 0) {
@@ -144,7 +148,7 @@ function findBestBlockInParity(
     maxNum: number,
     targetCount: number,
     placesLibres: Set<string>,
-    pmrDemandee: boolean
+    nbPmr: number
 ): string[] {
     // On itère par pas de 2 : 1, 3, 5... ou 2, 4, 6...
 
@@ -154,6 +158,7 @@ function findBestBlockInParity(
         if (lastSeatNum > maxNum) break
 
         const places: string[] = []
+        let foundPmrCount = 0
         let valide = true
 
         for (let k = 0; k < targetCount; k++) {
@@ -165,18 +170,19 @@ function findBestBlockInParity(
                 break
             }
 
-            // Validation PMR
-            const isPmr = rangee.pmr?.includes(seatNum)
-            if (pmrDemandee && !isPmr) {
-                valide = false
-                break
-            }
-            if (!pmrDemandee && isPmr) {
-                valide = false
-                break
+            if (rangee.pmr?.includes(seatNum)) {
+                foundPmrCount++
             }
 
             places.push(placeId)
+        }
+
+        if (valide) {
+            if (nbPmr > 0) {
+                if (foundPmrCount < nbPmr) valide = false
+            } else {
+                if (foundPmrCount > 0) valide = false
+            }
         }
 
         if (valide) return places
@@ -190,7 +196,7 @@ function chercherSur2Rangees(
     nbPlaces: number,
     placesLibres: Set<string>,
     isFrench: boolean = false,
-    pmrDemandee: boolean
+    nbPmr: number
 ): string[] | null {
 
     const parRangee = nbPlaces / 2
@@ -217,6 +223,7 @@ function chercherSur2Rangees(
             if (col + lastOffset > rangee1.sieges || col + lastOffset > rangee2.sieges) continue
 
             const places: string[] = []
+            let foundPmrCount = 0
             let valide = true
 
             for (let j = 0; j < parRangee; j++) {
@@ -230,17 +237,18 @@ function chercherSur2Rangees(
                     valide = false; break
                 }
 
-                // Check PMR
-                const isPmr1 = rangee1.pmr?.includes(currentNum)
-                const isPmr2 = rangee2.pmr?.includes(currentNum)
-
-                if (pmrDemandee) {
-                    if (!isPmr1 || !isPmr2) { valide = false; break }
-                } else {
-                    if (isPmr1 || isPmr2) { valide = false; break }
-                }
+                if (rangee1.pmr?.includes(currentNum)) foundPmrCount++
+                if (rangee2.pmr?.includes(currentNum)) foundPmrCount++
 
                 places.push(place1, place2)
+            }
+
+            if (valide) {
+                if (nbPmr > 0) {
+                    if (foundPmrCount < nbPmr) valide = false
+                } else {
+                    if (foundPmrCount > 0) valide = false
+                }
             }
 
             if (valide) return places

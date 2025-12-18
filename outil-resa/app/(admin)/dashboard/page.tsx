@@ -22,55 +22,58 @@ async function getDashboardData(associationId: string) {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
-    // 1. Récupérer l'association
-    const association = await prisma.association.findUnique({
-        where: { id: associationId },
-        select: { nom: true }
-    })
+    // ⚡ OPTIMISATION: Exécuter toutes les requêtes en parallèle
+    const [association, upcomingShows, showsThisMonth, reservationsThisMonth, activeShows] = await Promise.all([
+        // 1. Récupérer l'association
+        prisma.association.findUnique({
+            where: { id: associationId },
+            select: { nom: true }
+        }),
 
-    // 2. Représentations à venir (pour la table)
-    const upcomingShows = await prisma.representation.findMany({
-        where: {
-            associationId,
-            date: { gte: now }
-        },
-        orderBy: { date: 'asc' },
-        take: 5,
-        include: {
-            reservations: {
-                select: { nbPlaces: true }
+        // 2. Représentations à venir (pour la table)
+        prisma.representation.findMany({
+            where: {
+                associationId,
+                date: { gte: now }
+            },
+            orderBy: { date: 'asc' },
+            take: 5,
+            include: {
+                reservations: {
+                    select: { nbPlaces: true }
+                }
             }
-        }
-    })
+        }),
 
-    // 3. Stats: Représentations ce mois-ci
-    const showsThisMonth = await prisma.representation.count({
-        where: {
-            associationId,
-            date: {
-                gte: startOfMonth,
-                lte: endOfMonth
+        // 3. Stats: Représentations ce mois-ci
+        prisma.representation.count({
+            where: {
+                associationId,
+                date: {
+                    gte: startOfMonth,
+                    lte: endOfMonth
+                }
             }
-        }
-    })
+        }),
 
-    // 4. Stats: Réservations ce mois-ci (créées ce mois-ci)
-    const reservationsThisMonth = await prisma.reservation.aggregate({
-        where: {
-            representation: { associationId },
-            createdAt: {
-                gte: startOfMonth,
-                lte: endOfMonth
-            }
-        },
-        _sum: { nbPlaces: true }
-    })
+        // 4. Stats: Réservations ce mois-ci (créées ce mois-ci)
+        prisma.reservation.aggregate({
+            where: {
+                representation: { associationId },
+                createdAt: {
+                    gte: startOfMonth,
+                    lte: endOfMonth
+                }
+            },
+            _sum: { nbPlaces: true }
+        }),
 
-    // 5. Stats: Taux de remplissage moyen (sur les représentations à venir)
-    const activeShows = await prisma.representation.findMany({
-        where: { associationId, date: { gte: now } },
-        include: { reservations: { select: { nbPlaces: true } } }
-    })
+        // 5. Stats: Taux de remplissage moyen (sur les représentations à venir)
+        prisma.representation.findMany({
+            where: { associationId, date: { gte: now } },
+            include: { reservations: { select: { nbPlaces: true } } }
+        })
+    ])
 
     let totalFillRate = 0
     let showsWithCapacity = 0

@@ -35,12 +35,23 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
     const totalPlaces = rangees.reduce((acc, r) => acc + r.sieges, 0)
     const totalPmr = rangees.reduce((acc, r) => acc + (r.pmr?.length || 0), 0)
 
+    // State pour les inputs PMR (permet de taper "1-5" sans que ça se convertisse immédiatement)
+    const [pmrInputs, setPmrInputs] = useState<Record<number, string>>(() => {
+        const initial: Record<number, string> = {}
+        initialStructure.rangees?.forEach((r, i) => {
+            initial[i] = r.pmr?.join(', ') || ''
+        })
+        return initial
+    })
+
     const handleAddRow = () => {
         // Générer ID suivant (A, B, C...)
         const lastId = rangees.length > 0 ? rangees[rangees.length - 1].id : '@' // @ est avant A
         const nextId = String.fromCharCode(lastId.charCodeAt(0) + 1)
+        const newIndex = rangees.length
 
         setRangees([...rangees, { id: nextId, sieges: 10, pmr: [] }])
+        setPmrInputs(prev => ({ ...prev, [newIndex]: '' }))
     }
 
     // Ajout rapide de plusieurs rangées
@@ -84,15 +95,45 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
     }
 
     const handleChangePmr = (index: number, value: string) => {
-        // Parser "1, 2, 3" en [1, 2, 3]
-        const pmrSeats = value
-            .split(',')
-            .map(s => parseInt(s.trim()))
-            .filter(n => !isNaN(n) && n > 0)
+        // Mettre à jour l'input brut
+        setPmrInputs(prev => ({ ...prev, [index]: value }))
+    }
+
+    // Parser et appliquer les valeurs PMR au blur
+    const handlePmrBlur = (index: number) => {
+        const value = pmrInputs[index] || ''
+        const pmrSeats: number[] = []
+
+        const parts = value.split(',')
+
+        parts.forEach(part => {
+            part = part.trim()
+            if (part.includes('-')) {
+                // Gestion des plages (ex: 1-5, 5-12)
+                const [start, end] = part.split('-').map(n => parseInt(n))
+                if (!isNaN(start) && !isNaN(end) && start <= end) {
+                    for (let i = start; i <= end; i++) {
+                        pmrSeats.push(i)
+                    }
+                }
+            } else {
+                // Gestion des nombres simples
+                const num = parseInt(part)
+                if (!isNaN(num) && num > 0) {
+                    pmrSeats.push(num)
+                }
+            }
+        })
+
+        // Supprimer les doublons et trier
+        const uniqueSeats = Array.from(new Set(pmrSeats)).sort((a, b) => a - b)
 
         const newRangees = [...rangees]
-        newRangees[index].pmr = pmrSeats
+        newRangees[index].pmr = uniqueSeats
         setRangees(newRangees)
+
+        // Mettre à jour l'affichage avec le format propre
+        setPmrInputs(prev => ({ ...prev, [index]: uniqueSeats.join(', ') }))
     }
 
     const handleChangeId = (index: number, value: string) => {
@@ -108,6 +149,19 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
         } finally {
             setLoading(false)
         }
+    }
+
+    // Fonction helper pour formatter l'affichage des sièges PMR (ex: [1,2,3] -> "1-3")
+    const formatPmrDisplay = (pmrList: number[] | undefined) => {
+        if (!pmrList || pmrList.length === 0) return ''
+
+        // Pour l'instant, on affiche simplement la liste, améliorer si besoin
+        // L'utilisateur peut saisir "1-5", mais on stocke [1,2,3,4,5].
+        // Si on veut réafficher "1-5", il faudrait une logique inverse complexe.
+        // Pour l'instant, on laisse l'utilisateur voir la liste complète ou on garde l'input tel quel.
+        // Problème : l'input value est lié à `rangee.pmr` qui est number[].
+        // SOLUTION SIMPLE : On affiche la liste séparée par des virgules pour l'instant.
+        return pmrList.join(', ')
     }
 
     return (
@@ -248,7 +302,7 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                                 </AccordionTrigger>
                                 <AccordionContent className="space-y-3 pt-3">
                                     <p className="text-xs text-gray-600 mb-3">
-                                        Définissez les sièges et les places PMR (numéros séparés par des virgules)
+                                        Définissez les sièges et les places PMR. Vous pouvez utiliser des plages (ex: "1-5").
                                     </p>
                                     {rangees.map((rangee, index) => (
                                         <div key={index} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
@@ -280,9 +334,10 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                                                         </Label>
                                                         <Input
                                                             type="text"
-                                                            value={rangee.pmr?.join(', ') || ''}
+                                                            value={pmrInputs[index] || ''}
                                                             onChange={(e) => handleChangePmr(index, e.target.value)}
-                                                            placeholder="Ex: 1, 2"
+                                                            onBlur={() => handlePmrBlur(index)}
+                                                            placeholder="Ex: 1,2 ou 5-12"
                                                             className="bg-white text-sm"
                                                         />
                                                     </div>
@@ -322,13 +377,27 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                                 </div>
                             )}
                         </div>
-                        <Button className="w-full" onClick={handleSave} disabled={loading}>
-                            <Save className="mr-2 h-4 w-4" />
-                            {loading ? 'Enregistrement...' : 'Enregistrer la configuration'}
-                        </Button>
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Bouton sticky en bas */}
+            <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t shadow-lg p-4 z-50">
+                <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+                    <div className="text-sm text-gray-600">
+                        <span className="font-semibold text-blue-600">{totalPlaces}</span> places
+                        {totalPmr > 0 && (
+                            <span className="ml-2 text-purple-600">
+                                (<Accessibility className="h-3 w-3 inline-block" /> {totalPmr} PMR)
+                            </span>
+                        )}
+                    </div>
+                    <Button className="px-8" onClick={handleSave} disabled={loading}>
+                        <Save className="mr-2 h-4 w-4" />
+                        {loading ? 'Enregistrement...' : 'Enregistrer la configuration'}
+                    </Button>
+                </div>
+            </div>
 
             {/* Prévisualisation */}
             <Card>

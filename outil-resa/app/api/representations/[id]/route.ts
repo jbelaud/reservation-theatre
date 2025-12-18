@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedAssociation, validateOwnership, getErrorMessage } from '@/lib/api-helpers'
+import { parsePlacesOccupees } from '@/lib/json-helpers'
 
 // Schéma de validation pour mettre à jour une représentation
 const updateRepresentationSchema = z.object({
@@ -121,10 +122,13 @@ export async function GET(
     try {
         const { id } = await params
         const associationId = await getAuthenticatedAssociation(request)
-        await validateOwnership(id, associationId)
 
-        const representation = await prisma.representation.findUnique({
-            where: { id },
+        // ⚡ OPTIMISATION: Une seule requête qui valide la propriété ET récupère les données
+        const representation = await prisma.representation.findFirst({
+            where: {
+                id,
+                associationId // Validation de propriété intégrée
+            },
             include: {
                 reservations: {
                     orderBy: { createdAt: 'desc' }
@@ -139,16 +143,27 @@ export async function GET(
             )
         }
 
-        const placesOccupeesArray = Array.isArray(representation.placesOccupees)
-            ? representation.placesOccupees as string[]
-            : []
+        const placesOccupeesArray = parsePlacesOccupees(representation.placesOccupees)
 
         const placesRestantes = representation.capacite - placesOccupeesArray.length
         const nbReservations = representation.reservations.length
         const tauxRemplissage = Math.round((placesOccupeesArray.length / representation.capacite) * 100)
 
+        // Parser les sièges de chaque réservation (String JSON en SQLite)
+        const reservationsFormatted = representation.reservations.map((r: any) => {
+            let sieges: string[] = []
+            if (typeof r.sieges === 'string') {
+                try { sieges = JSON.parse(r.sieges) } catch { }
+            } else if (Array.isArray(r.sieges)) {
+                sieges = r.sieges
+            }
+            return { ...r, sieges }
+        })
+
         return NextResponse.json({
             ...representation,
+            placesOccupees: placesOccupeesArray,
+            reservations: reservationsFormatted,
             placesRestantes,
             nbReservations,
             tauxRemplissage

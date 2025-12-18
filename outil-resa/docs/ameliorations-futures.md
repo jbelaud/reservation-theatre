@@ -259,3 +259,4 @@ resavo:
 
 - revoir le plan de salle pour la réservation
 - revoir le fichier excel en google sheet
+- installer supabase pour sotcker les images associations

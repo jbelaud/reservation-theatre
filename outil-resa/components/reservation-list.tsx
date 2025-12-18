@@ -16,6 +16,15 @@ import {
     TableRow,
 } from '@/components/ui/table'
 
+// Helper pour parser les sièges (compatibilité SQLite/PostgreSQL)
+const parseSieges = (sieges: unknown): string[] => {
+    if (Array.isArray(sieges)) return sieges
+    if (typeof sieges === 'string') {
+        try { return JSON.parse(sieges) } catch { return [] }
+    }
+    return []
+}
+
 interface Reservation {
     id: string
     prenom: string
@@ -61,7 +70,7 @@ export function ReservationList({ reservations, onStatusChange, showRepresentati
                     r.telephone,
                     r.email || '',
                     r.nbPlaces,
-                    `"${(r.sieges as string[]).join(', ')}"`,
+                    `"${parseSieges(r.sieges).join(', ')}"`,
                     r.statut,
                 ]
                 if (showRepresentation) {
@@ -135,7 +144,7 @@ export function ReservationList({ reservations, onStatusChange, showRepresentati
                                     <TableCell>{resa.nbPlaces}</TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1">
-                                            {(resa.sieges as string[]).map((siege) => (
+                                            {parseSieges(resa.sieges).map((siege) => (
                                                 <Badge key={siege} variant="secondary" className="text-xs">
                                                     {siege}
                                                 </Badge>

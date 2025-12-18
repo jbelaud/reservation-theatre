@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { parseSieges } from '@/lib/json-helpers'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
@@ -29,7 +30,7 @@ export default async function ConfirmationPage({
         notFound()
     }
 
-    const sieges = reservation.sieges as string[]
+    const sieges = parseSieges(reservation.sieges)
 
     return (
         <div className="max-w-md mx-auto">

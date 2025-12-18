@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { parsePlacesOccupees } from '@/lib/json-helpers'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
@@ -83,7 +84,7 @@ export default async function AssociationPage({
                         </Card>
                     ) : (
                         association.representations.map((representation) => {
-                            const placesOccupees = (representation.placesOccupees as string[]) || []
+                            const placesOccupees = parsePlacesOccupees(representation.placesOccupees)
                             const placesRestantes = representation.capacite - placesOccupees.length
 
                             return (

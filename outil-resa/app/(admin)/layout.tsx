@@ -1,8 +1,21 @@
 import { Sidebar } from '@/components/admin/sidebar'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { verifyToken } from '@/lib/auth-edge'
 import { prisma } from '@/lib/prisma'
+import { unstable_cache } from 'next/cache'
+
+// Cache le nom de l'association pour 5 minutes
+const getCachedAssociationName = unstable_cache(
+    async (associationId: string) => {
+        const association = await prisma.association.findUnique({
+            where: { id: associationId },
+            select: { nom: true }
+        })
+        return association?.nom || 'Théâtre'
+    },
+    ['association-name'],
+    { revalidate: 300, tags: ['association'] } // Cache 5 minutes
+)
 
 export default async function AdminLayout({
     children,
@@ -17,13 +30,7 @@ export default async function AdminLayout({
     if (token) {
         const payload = await verifyToken(token)
         if (payload) {
-            const association = await prisma.association.findUnique({
-                where: { id: payload.associationId },
-                select: { nom: true }
-            })
-            if (association) {
-                associationName = association.nom
-            }
+            associationName = await getCachedAssociationName(payload.associationId)
         }
     }
 
@@ -38,3 +45,4 @@ export default async function AdminLayout({
         </div>
     )
 }
+

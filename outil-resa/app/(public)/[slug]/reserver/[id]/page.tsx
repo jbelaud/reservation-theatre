@@ -30,7 +30,8 @@ export default function ReservationPage({
         telephone: '',
         email: '',
         nbPlaces: 1,
-        pmr: false
+        pmr: false,
+        nbPmr: 1
     })
 
     useEffect(() => {
@@ -47,6 +48,16 @@ export default function ReservationPage({
             .finally(() => setLoading(false))
     }, [id])
 
+    const handleNbPlacesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newNbPlaces = parseInt(e.target.value)
+        setFormData(prev => ({
+            ...prev,
+            nbPlaces: newNbPlaces,
+            // Si le nombre de places PMR était supérieur au nouveau total, on le réduit
+            nbPmr: prev.nbPmr > newNbPlaces ? newNbPlaces : prev.nbPmr
+        }))
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
@@ -58,7 +69,13 @@ export default function ReservationPage({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     representationId: id,
-                    ...formData
+                    prenom: formData.prenom,
+                    nom: formData.nom,
+                    telephone: formData.telephone,
+                    email: formData.email,
+                    nbPlaces: formData.nbPlaces,
+                    // Si PMR coché, on envoie le nombre spécifique, sinon 0
+                    nbPmr: formData.pmr ? formData.nbPmr : 0
                 })
             })
 
@@ -66,13 +83,13 @@ export default function ReservationPage({
 
             if (!res.ok) {
                 setError(data.error || 'Erreur lors de la réservation')
+                setSubmitting(false)
                 return
             }
 
             router.push(`/${slug}/confirmation/${data.id}`)
         } catch (err) {
             setError('Erreur de connexion au serveur')
-        } finally {
             setSubmitting(false)
         }
     }
@@ -137,40 +154,63 @@ export default function ReservationPage({
                         </div>
 
                         <div>
-                            <Label htmlFor="nbPlaces">Nombre de places</Label>
+                            <Label htmlFor="nbPlaces">Nombre total de places</Label>
                             <select
                                 id="nbPlaces"
                                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 value={formData.nbPlaces}
-                                onChange={e => setFormData({ ...formData, nbPlaces: parseInt(e.target.value) })}
+                                onChange={handleNbPlacesChange}
                             >
                                 {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
                                     <option key={n} value={n}>{n} place{n > 1 ? 's' : ''}</option>
                                 ))}
                             </select>
+                        </div>
 
-                            <div className="mt-4 flex items-start space-x-2 bg-slate-50 p-3 rounded-lg border">
+                        <div className="mt-4 flex flex-col space-y-3 bg-slate-50 p-4 rounded-lg border">
+                            <div className="flex items-start space-x-2">
                                 <Checkbox
                                     id="pmr"
                                     checked={formData.pmr}
-                                    onCheckedChange={(checked) => setFormData({ ...formData, pmr: checked as boolean })}
+                                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, pmr: checked as boolean }))}
                                 />
                                 <div className="grid gap-1.5 leading-none">
-                                    <Label htmlFor="pmr" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
+                                    <Label htmlFor="pmr" className="text-sm font-medium leading-none flex items-center gap-2 cursor-pointer">
                                         <Accessibility className="h-4 w-4" />
-                                        Besoin d'un accès PMR
+                                        Besoin d'un accès PMR / Fauteuil
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Cochez cette case si vous avez besoin de places accessibles aux fauteuils roulants.
+                                        Cochez si le groupe contient des personnes en situation de handicap.
                                     </p>
                                 </div>
                             </div>
 
-                            <p className="text-xs text-slate-500 mt-2">
-                                {formData.pmr
-                                    ? "♿ Nous rechercherons spécifiquement des places accessibles pour votre groupe."
-                                    : "Nous placerons automatiquement vos sièges côte à côte."}
-                            </p>
+                            {formData.pmr && (
+                                <div className="ml-6 animate-in slide-in-from-top-2 fade-in duration-200">
+                                    <Label htmlFor="nbPmr" className="text-xs font-semibold text-slate-700 block mb-1">
+                                        Combien de places PMR ("Fauteuil") ?
+                                    </Label>
+                                    <select
+                                        id="nbPmr"
+                                        className="flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                        value={formData.nbPmr}
+                                        onChange={e => setFormData(prev => ({ ...prev, nbPmr: parseInt(e.target.value) }))}
+                                    >
+                                        {Array.from({ length: formData.nbPlaces }, (_, i) => i + 1).map(n => (
+                                            <option key={n} value={n}>{n} place{n > 1 ? 's' : ''}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-purple-700 mt-2 font-medium">
+                                        ♿ Nous trouverons {formData.nbPmr} place{formData.nbPmr > 1 ? 's' : ''} accessible{formData.nbPmr > 1 ? 's' : ''} et {formData.nbPlaces - formData.nbPmr} place{formData.nbPlaces - formData.nbPmr > 1 ? 's' : ''} accompagnant{formData.nbPlaces - formData.nbPmr > 1 ? 's' : ''} à côté.
+                                    </p>
+                                </div>
+                            )}
+
+                            {!formData.pmr && (
+                                <p className="text-xs text-slate-500">
+                                    Nous placerons automatiquement vos sièges côte à côte.
+                                </p>
+                            )}
                         </div>
 
                         {error && (

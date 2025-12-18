@@ -4,6 +4,17 @@ import { useEffect, useState } from 'react'
 import { SeatingPlanEditor } from '@/components/seating-plan-editor'
 import { useToast } from '@/components/ui/use-toast'
 
+// Helper pour parser la structure (compatibilité SQLite/PostgreSQL)
+const parsePlanStructure = (structure: unknown): { rangees: any[]; configuration?: string } => {
+    if (typeof structure === 'object' && structure !== null) {
+        return structure as any
+    }
+    if (typeof structure === 'string') {
+        try { return JSON.parse(structure) } catch { return { rangees: [], configuration: 'standard' } }
+    }
+    return { rangees: [], configuration: 'standard' }
+}
+
 export default function PlanSallePage() {
     const [plan, setPlan] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -66,10 +77,11 @@ export default function PlanSallePage() {
 
             {plan && (
                 <SeatingPlanEditor
-                    initialStructure={plan.structure as any}
+                    initialStructure={parsePlanStructure(plan.structure)}
                     onSave={handleSave}
                 />
             )}
         </div>
     )
 }
+

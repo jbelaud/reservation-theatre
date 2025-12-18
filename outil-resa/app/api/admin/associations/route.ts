@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
                     create: {
                         nom: 'Salle principale',
                         capaciteTotal: 100,
-                        structure: {
+                        structure: JSON.stringify({
                             rangees: [
                                 { id: 'A', sieges: 12 },
                                 { id: 'B', sieges: 14 },
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
                                 { id: 'G', sieges: 12 },
                                 { id: 'H', sieges: 12 }
                             ]
-                        }
+                        })
                     }
                 }
             },

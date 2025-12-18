@@ -53,10 +53,10 @@ async function main() {
         create: {
             nom: 'Salle principale',
             capaciteTotal: 0,
-            structure: {
+            structure: JSON.stringify({
                 rangees: [],
                 configuration: 'standard'
-            },
+            }),
             associationId: testUser.id
         }
     })
@@ -71,7 +71,7 @@ async function main() {
             heure: '20:00',
             capacite: 0,
             description: 'Comédie-ballet en trois actes de Molière',
-            placesOccupees: [],
+            placesOccupees: '[]',
             associationId: testUser.id
         }
     })
@@ -83,7 +83,7 @@ async function main() {
             heure: '19:30',
             capacite: 0,
             description: 'Comédie en cinq actes de Molière',
-            placesOccupees: [],
+            placesOccupees: '[]',
             associationId: testUser.id
         }
     })

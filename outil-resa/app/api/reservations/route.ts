@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { trouverPlaces } from '@/lib/placement'
+import { parsePlacesOccupees, parsePlanStructure, stringifyJsonField } from '@/lib/json-helpers'
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { representationId, prenom, nom, telephone, email, nbPlaces, sieges, pmr } = body
+        const { representationId, prenom, nom, telephone, email, nbPlaces, sieges, pmr, nbPmr } = body
 
         // 1. Validation basique
         if (!representationId || !prenom || !nom || !telephone || !nbPlaces) {
@@ -18,6 +19,23 @@ export async function POST(request: NextRequest) {
         if (nbPlaces < 1 || nbPlaces > 10) {
             return NextResponse.json(
                 { error: 'Le nombre de places doit être compris entre 1 et 10' },
+                { status: 400 }
+            )
+        }
+
+        // Déterminer le nombre de places PMR demandées
+        // Si nbPmr est fourni (nouvelle interface publique), on l'utilise
+        // Sinon, si pmr est vrai (interface admin/ancienne), on en demande au moins 1
+        let requestedNbPmr = 0
+        if (typeof nbPmr === 'number') {
+            requestedNbPmr = nbPmr
+        } else if (pmr) {
+            requestedNbPmr = 1 // Par défaut, au moins une place PMR si coché
+        }
+
+        if (requestedNbPmr > nbPlaces) {
+            return NextResponse.json(
+                { error: 'Le nombre de places PMR ne peut pas être supérieur au nombre total de places' },
                 { status: 400 }
             )
         }
@@ -41,8 +59,8 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // 3. Vérifier capacité globale
-        const placesOccupeesActuelles = (representation.placesOccupees as string[]) || []
+        // 3. Vérifier capacité globale (parse JSON pour SQLite)
+        const placesOccupeesActuelles = parsePlacesOccupees(representation.placesOccupees)
         if (placesOccupeesActuelles.length + nbPlaces > representation.capacite) {
             return NextResponse.json(
                 { error: 'Plus assez de places disponibles' },
@@ -83,18 +101,18 @@ export async function POST(request: NextRequest) {
                 )
             }
 
-            const structurePlan = planSalle.structure as any
+            const structurePlan = parsePlanStructure(planSalle.structure)
 
             const placesAuto = trouverPlaces(
                 nbPlaces,
                 structurePlan,
                 placesOccupeesActuelles,
-                pmr || false // Activer le mode PMR si demandé
+                requestedNbPmr
             )
 
             if (!placesAuto) {
-                const msg = pmr
-                    ? 'Aucune place PMR disponible pour ce nombre de personnes. Essayez de réduire le nombre ou contacter l\'association.'
+                const msg = requestedNbPmr > 0
+                    ? 'Impossible de trouver des places contiguës avec accès PMR pour ce groupe. Essayez de réduire le nombre de places ou contactez l\'association.'
                     : 'Impossible de trouver des places contiguës. Essayez avec moins de places ou sélectionnez manuellement.'
 
                 return NextResponse.json(
@@ -116,11 +134,10 @@ export async function POST(request: NextRequest) {
                     telephone,
                     email,
                     nbPlaces,
-                    sieges: placesAttribuees,
+                    sieges: stringifyJsonField(placesAttribuees),
                     statut: 'confirmé',
                     representationId,
-                    // Note: on pourrait stocker le faite que c'est une résa PMR dans 'notes' ou un nouveau champ
-                    notes: pmr ? 'Réservation PMR' : undefined
+                    notes: requestedNbPmr > 0 ? `Réservation avec ${requestedNbPmr} place(s) PMR` : undefined
                 }
             })
 
@@ -128,7 +145,7 @@ export async function POST(request: NextRequest) {
             await tx.representation.update({
                 where: { id: representationId },
                 data: {
-                    placesOccupees: [...placesOccupeesActuelles, ...placesAttribuees]
+                    placesOccupees: stringifyJsonField([...placesOccupeesActuelles, ...placesAttribuees])
                 }
             })
 

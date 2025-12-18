@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedAssociation, getErrorMessage } from '@/lib/api-helpers'
+import { stringifyJsonField } from '@/lib/json-helpers'
 
 /**
  * GET /api/plan-salle
@@ -21,10 +22,10 @@ export async function GET(request: NextRequest) {
                     associationId,
                     nom: 'Salle principale',
                     capaciteTotal: 0,
-                    structure: {
+                    structure: stringifyJsonField({
                         rangees: [],
                         configuration: 'standard'
-                    }
+                    })
                 }
             })
             return NextResponse.json(newPlan)
@@ -71,10 +72,10 @@ export async function PATCH(request: NextRequest) {
         const plan = await prisma.planSalle.update({
             where: { associationId },
             data: {
-                structure: {
+                structure: stringifyJsonField({
                     rangees: structure.rangees,
                     configuration: configuration
-                },
+                }),
                 capaciteTotal,
                 configuration: configuration
             }

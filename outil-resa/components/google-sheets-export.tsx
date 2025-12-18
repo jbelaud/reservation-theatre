@@ -147,14 +147,28 @@ export function GoogleSheetsExport({
                         <h4 className="font-semibold mb-2 text-blue-900">📝 Comment importer dans Google Sheets :</h4>
                         <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
                             <li>Cliquez sur "Télécharger le fichier CSV" ci-dessous</li>
-                            <li>Ouvrez <a href="https://sheets.google.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">Google Sheets</a></li>
-                            <li>Créez une nouvelle feuille ou ouvrez-en une existante</li>
+                            <li>Ouvrez <a href="https://sheets.google.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">Google Sheets</a> (gratuit avec un compte Google)</li>
+                            <li>Créez une nouvelle feuille vierge</li>
                             <li>Allez dans <strong>Fichier → Importer</strong></li>
-                            <li>Sélectionnez l'onglet <strong>"Importer"</strong></li>
-                            <li>Choisissez le fichier CSV téléchargé</li>
-                            <li>Sélectionnez <strong>"Remplacer la feuille de calcul actuelle"</strong> ou <strong>"Insérer une nouvelle feuille"</strong></li>
+                            <li>Cliquez sur l'onglet <strong>"Importer"</strong> puis glissez votre fichier CSV ou cliquez pour le sélectionner</li>
+                            <li>
+                                <strong>Important :</strong> Dans les options d'import :
+                                <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                                    <li>Type de séparateur : <strong>Point-virgule</strong></li>
+                                    <li>Emplacement : <strong>"Remplacer la feuille de calcul actuelle"</strong></li>
+                                </ul>
+                            </li>
                             <li>Cliquez sur <strong>"Importer les données"</strong></li>
                         </ol>
+                    </div>
+
+                    {/* Note sur les alternatives */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <p className="text-xs text-gray-600">
+                            💡 <strong>Pas d'Excel ?</strong> Google Sheets est 100% gratuit et fonctionne dans votre navigateur.
+                            Alternatives : <a href="https://www.libreoffice.org/" target="_blank" rel="noopener noreferrer" className="underline">LibreOffice Calc</a> (gratuit, installable)
+                            ou <a href="https://www.office.com/launch/excel" target="_blank" rel="noopener noreferrer" className="underline">Excel Online</a> (gratuit avec compte Microsoft).
+                        </p>
                     </div>
 
                     {/* Bouton de téléchargement */}
