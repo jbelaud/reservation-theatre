@@ -43,7 +43,7 @@ export function ReservationsClient({
 
             return true
         })
-        .sort((a, b) => new Date(b.representationRawDate).getTime() - new Date(a.representationRawDate).getTime())
+        .sort((a, b) => new Date(a.representationRawDate).getTime() - new Date(b.representationRawDate).getTime())
 
     // Filter representations for the dropdown based on selected year
     const filteredRepresentationOptions = representations.filter(rep => {
