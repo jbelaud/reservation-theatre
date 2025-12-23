@@ -27,21 +27,23 @@ export function ReservationsClient({
     // Extract unique years from representations
     const years = Array.from(new Set(representations.map(r => new Date(r.rawDate).getFullYear().toString()))).sort().reverse()
 
-    const filteredReservations = reservations.filter(reservation => {
-        const resDate = new Date(reservation.representationRawDate)
+    const filteredReservations = reservations
+        .filter(reservation => {
+            const resDate = new Date(reservation.representationRawDate)
 
-        // Filter by Year
-        if (selectedYear !== 'all' && resDate.getFullYear().toString() !== selectedYear) {
-            return false
-        }
+            // Filter by Year
+            if (selectedYear !== 'all' && resDate.getFullYear().toString() !== selectedYear) {
+                return false
+            }
 
-        // Filter by Representation
-        if (selectedRepresentationId !== 'all' && reservation.representationId !== selectedRepresentationId) {
-            return false
-        }
+            // Filter by Representation
+            if (selectedRepresentationId !== 'all' && reservation.representationId !== selectedRepresentationId) {
+                return false
+            }
 
-        return true
-    })
+            return true
+        })
+        .sort((a, b) => new Date(b.representationRawDate).getTime() - new Date(a.representationRawDate).getTime())
 
     // Filter representations for the dropdown based on selected year
     const filteredRepresentationOptions = representations.filter(rep => {
