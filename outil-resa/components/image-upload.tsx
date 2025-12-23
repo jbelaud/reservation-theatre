@@ -23,15 +23,20 @@ export function ImageUpload({ value, onChange, folder = 'associations', label = 
                     folder: folder,
                     maxFiles: 1,
                     resourceType: 'image',
+                    sources: ['local', 'url'],
+                    multiple: false,
                 }}
-                onUpload={(result: any) => {
+                onSuccess={(result: any) => {
                     setIsUploading(false)
-                    if (result.event === 'success') {
+                    console.log('Upload success:', result)
+                    if (result?.info?.public_id) {
                         onChange(result.info.public_id)
                     }
                 }}
-                onOpen={() => setIsUploading(true)}
-                onClose={() => setIsUploading(false)}
+                onError={(error: any) => {
+                    console.error('Upload error:', error)
+                    setIsUploading(false)
+                }}
             >
                 {({ open }) => (
                     <div>
@@ -62,7 +67,10 @@ export function ImageUpload({ value, onChange, folder = 'associations', label = 
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => open()}
+                                onClick={() => {
+                                    setIsUploading(true)
+                                    open()
+                                }}
                                 disabled={isUploading}
                                 className="w-full"
                             >

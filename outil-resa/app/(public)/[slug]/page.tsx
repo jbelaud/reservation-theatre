@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ReservationModal } from '@/components/reservation-modal'
 import { ConfirmationModal } from '@/components/confirmation-modal'
+import { CldImage } from 'next-cloudinary'
 
 export default function AssociationPage({
     params
@@ -62,9 +63,11 @@ export default function AssociationPage({
             <div className="text-center mb-12">
                 <div className="flex items-center justify-center gap-4 mb-4">
                     {association.logo && (
-                        <img
+                        <CldImage
                             src={association.logo}
                             alt={`Logo ${association.nom}`}
+                            width="80"
+                            height="80"
                             className="h-20 w-auto object-contain"
                         />
                     )}
@@ -80,9 +83,11 @@ export default function AssociationPage({
                 <div className="md:col-span-4">
                     {association.affiche ? (
                         <div className="sticky top-8">
-                            <img
+                            <CldImage
                                 src={association.affiche}
                                 alt="Affiche du spectacle"
+                                width="400"
+                                height="600"
                                 className="w-full rounded-lg shadow-lg"
                             />
                         </div>
