@@ -1,43 +1,60 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
 import { parsePlacesOccupees } from '@/lib/json-helpers'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
-import Link from 'next/link'
+import { Card } from '@/components/ui/card'
+import { ReservationModal } from '@/components/reservation-modal'
+import { ConfirmationModal } from '@/components/confirmation-modal'
 
-export default async function AssociationPage({
+export default function AssociationPage({
     params
 }: {
     params: Promise<{ slug: string }>
 }) {
-    const { slug } = await params
+    const [slug, setSlug] = useState<string>('')
+    const [association, setAssociation] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+    const [selectedRepresentationId, setSelectedRepresentationId] = useState<string | null>(null)
+    const [reservationModalOpen, setReservationModalOpen] = useState(false)
+    const [confirmationModalOpen, setConfirmationModalOpen] = useState(false)
+    const [confirmedReservationId, setConfirmedReservationId] = useState<string>('')
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    // Reculer d'un jour pour gérer les fuseaux horaires (UTC vs Local)
-    // Ex: 27 Nov 00:00 Local -> 26 Nov 23:00 UTC. Si on filtre à partir du 27 Nov 00:00 UTC, on rate l'événement.
-    today.setDate(today.getDate() - 1)
-
-    const association = await prisma.association.findUnique({
-        where: { slug },
-        include: {
-            representations: {
-                where: {
-                    date: {
-                        gte: today
+    useEffect(() => {
+        params.then(({ slug: resolvedSlug }) => {
+            setSlug(resolvedSlug)
+            fetch(`/api/associations/${resolvedSlug}`)
+                .then(res => {
+                    if (!res.ok) {
+                        notFound()
                     }
-                },
-                orderBy: {
-                    date: 'asc'
-                }
-            }
-        }
-    })
+                    return res.json()
+                })
+                .then(data => setAssociation(data))
+                .catch(() => notFound())
+                .finally(() => setLoading(false))
+        })
+    }, [])
+
+    const handleReserverClick = (representationId: string) => {
+        setSelectedRepresentationId(representationId)
+        setReservationModalOpen(true)
+    }
+
+    const handleReservationSuccess = (reservationId: string) => {
+        setConfirmedReservationId(reservationId)
+        setConfirmationModalOpen(true)
+    }
+
+    if (loading) {
+        return <div className="text-center p-8">Chargement...</div>
+    }
 
     if (!association) {
-        notFound()
+        return null
     }
 
     return (
@@ -113,10 +130,12 @@ export default async function AssociationPage({
                                             )}
                                         </div>
 
-                                        <Button asChild disabled={placesRestantes === 0} size="lg">
-                                            <Link href={`/${slug}/reserver/${representation.id}`}>
-                                                Réserver
-                                            </Link>
+                                        <Button 
+                                            onClick={() => handleReserverClick(representation.id)}
+                                            disabled={placesRestantes === 0} 
+                                            size="lg"
+                                        >
+                                            Réserver
                                         </Button>
                                     </div>
                                 </Card>
@@ -125,6 +144,21 @@ export default async function AssociationPage({
                     )}
                 </div>
             </div>
+
+            <ReservationModal
+                open={reservationModalOpen}
+                onOpenChange={setReservationModalOpen}
+                representationId={selectedRepresentationId || ''}
+                slug={slug}
+                onReservationSuccess={handleReservationSuccess}
+            />
+
+            <ConfirmationModal
+                open={confirmationModalOpen}
+                onOpenChange={setConfirmationModalOpen}
+                reservationId={confirmedReservationId}
+                slug={slug}
+            />
         </div>
     )
 }

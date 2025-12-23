@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
-import { Search, Check, X, Download } from 'lucide-react'
+import { Search, Download } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -41,11 +40,10 @@ interface Reservation {
 
 interface ReservationListProps {
     reservations: Reservation[]
-    onStatusChange: (id: string, newStatus: string) => void
     showRepresentation?: boolean
 }
 
-export function ReservationList({ reservations, onStatusChange, showRepresentation = false }: ReservationListProps) {
+export function ReservationList({ reservations, showRepresentation = false }: ReservationListProps) {
     const [searchTerm, setSearchTerm] = useState('')
 
     const filteredReservations = reservations.filter(
@@ -115,13 +113,12 @@ export function ReservationList({ reservations, onStatusChange, showRepresentati
                             <TableHead>Places</TableHead>
                             <TableHead>Sièges</TableHead>
                             <TableHead>Statut</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredReservations.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={showRepresentation ? 7 : 6} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={showRepresentation ? 6 : 5} className="text-center py-8 text-muted-foreground">
                                     Aucune réservation trouvée
                                 </TableCell>
                             </TableRow>
@@ -154,37 +151,13 @@ export function ReservationList({ reservations, onStatusChange, showRepresentati
                                     <TableCell>
                                         <Badge
                                             variant={
-                                                resa.statut === 'présent'
-                                                    ? 'default' // green-like usually
-                                                    : resa.statut === 'annulé'
-                                                        ? 'destructive'
-                                                        : 'outline'
+                                                resa.statut === 'annulé'
+                                                    ? 'destructive'
+                                                    : 'outline'
                                             }
-                                            className={resa.statut === 'présent' ? 'bg-green-600 hover:bg-green-700' : ''}
                                         >
                                             {resa.statut}
                                         </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {resa.statut !== 'annulé' && (
-                                            <Button
-                                                size="sm"
-                                                variant={resa.statut === 'présent' ? 'outline' : 'default'}
-                                                onClick={() =>
-                                                    onStatusChange(resa.id, resa.statut === 'présent' ? 'confirmé' : 'présent')
-                                                }
-                                            >
-                                                {resa.statut === 'présent' ? (
-                                                    <>
-                                                        <X className="mr-1 h-3 w-3" /> Annuler présence
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Check className="mr-1 h-3 w-3" /> Marquer présent
-                                                    </>
-                                                )}
-                                            </Button>
-                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
                         heure: validatedData.heure,
                         capacite: validatedData.capacite,
                         description: validatedData.description,
-                        placesOccupees: [],
+                        placesOccupees: "[]",
                         associationId,
                     },
                 })

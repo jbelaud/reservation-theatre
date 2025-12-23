@@ -111,24 +111,6 @@ export default function RepresentationDetailPage({
         }
     }
 
-    const handleStatusChange = async (id: string, newStatus: string) => {
-        try {
-            const response = await fetch(`/api/reservations/${id}/status`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ statut: newStatus }),
-            })
-
-            if (!response.ok) throw new Error('Erreur lors de la mise à jour')
-
-            // Rafraîchir
-            await fetchRepresentation()
-        } catch (error) {
-            console.error(error)
-            alert('Impossible de mettre à jour le statut')
-        }
-    }
-
     if (loading) {
         return (
             <div className="p-8">
@@ -251,7 +233,6 @@ export default function RepresentationDetailPage({
 
                         <ReservationList
                             reservations={representation.reservations || []}
-                            onStatusChange={handleStatusChange}
                         />
                     </div>
                 </>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { parseSieges } from '@/lib/json-helpers'
 
 export async function GET(
     request: NextRequest,
@@ -33,7 +34,12 @@ export async function GET(
             )
         }
 
-        return NextResponse.json(reservation)
+        const sieges = parseSieges(reservation.sieges)
+
+        return NextResponse.json({
+            ...reservation,
+            sieges
+        })
 
     } catch (error) {
         console.error('Fetch reservation error:', error)

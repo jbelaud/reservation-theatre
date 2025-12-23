@@ -16,9 +16,9 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        if (nbPlaces < 1 || nbPlaces > 10) {
+        if (nbPlaces < 1 || nbPlaces > 50) {
             return NextResponse.json(
-                { error: 'Le nombre de places doit être compris entre 1 et 10' },
+                { error: 'Le nombre de places doit être compris entre 1 et 50' },
                 { status: 400 }
             )
         }

@@ -222,7 +222,7 @@ export function ManualReservationModal({ representationId, representations, onSu
                                 setSelectedSeats([])
                             }}
                         >
-                            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                            {Array.from({ length: 50 }, (_, i) => i + 1).map((n) => (
                                 <option key={n} value={n}>
                                     {n} place{n > 1 ? 's' : ''}
                                 </option>

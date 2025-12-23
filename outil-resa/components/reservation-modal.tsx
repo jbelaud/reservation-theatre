@@ -1,24 +1,30 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Accessibility } from 'lucide-react'
+import { Accessibility, ArrowLeft } from 'lucide-react'
 
-export default function ReservationPage({
-    params
-}: {
-    params: Promise<{ slug: string; id: string }>
-}) {
-    const { slug, id } = use(params)
-    const router = useRouter()
+interface ReservationModalProps {
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    representationId: string
+    slug: string
+    onReservationSuccess: (reservationId: string) => void
+}
 
+export function ReservationModal({ open, onOpenChange, representationId, onReservationSuccess }: ReservationModalProps) {
     const [representation, setRepresentation] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
@@ -35,25 +41,27 @@ export default function ReservationPage({
     })
 
     useEffect(() => {
-        fetch(`/api/representations/${id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) {
-                    setError(data.error)
-                } else {
-                    setRepresentation(data)
-                }
-            })
-            .catch(() => setError('Erreur de chargement'))
-            .finally(() => setLoading(false))
-    }, [id])
+        if (open && representationId) {
+            setLoading(true)
+            fetch(`/api/representations/${representationId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        setError(data.error)
+                    } else {
+                        setRepresentation(data)
+                    }
+                })
+                .catch(() => setError('Erreur de chargement'))
+                .finally(() => setLoading(false))
+        }
+    }, [open, representationId])
 
     const handleNbPlacesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newNbPlaces = parseInt(e.target.value)
         setFormData(prev => ({
             ...prev,
             nbPlaces: newNbPlaces,
-            // Si le nombre de places PMR était supérieur au nouveau total, on le réduit
             nbPmr: prev.nbPmr > newNbPlaces ? newNbPlaces : prev.nbPmr
         }))
     }
@@ -68,13 +76,12 @@ export default function ReservationPage({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    representationId: id,
+                    representationId,
                     prenom: formData.prenom,
                     nom: formData.nom,
                     telephone: formData.telephone,
                     email: formData.email,
                     nbPlaces: formData.nbPlaces,
-                    // Si PMR coché, on envoie le nombre spécifique, sinon 0
                     nbPmr: formData.pmr ? formData.nbPmr : 0
                 })
             })
@@ -87,27 +94,61 @@ export default function ReservationPage({
                 return
             }
 
-            router.push(`/${slug}/confirmation/${data.id}`)
-        } catch (err) {
+            onOpenChange(false)
+            onReservationSuccess(data.id)
+        } catch {
             setError('Erreur de connexion au serveur')
             setSubmitting(false)
         }
     }
 
-    if (loading) return <div className="text-center p-8">Chargement...</div>
-    if (!representation) return <div className="text-center p-8 text-red-600">Représentation introuvable</div>
+    const handleClose = () => {
+        if (!submitting) {
+            onOpenChange(false)
+            setFormData({
+                prenom: '',
+                nom: '',
+                telephone: '',
+                email: '',
+                nbPlaces: 1,
+                pmr: false,
+                nbPmr: 1
+            })
+            setError('')
+        }
+    }
 
     return (
-        <div className="max-w-md mx-auto">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Réserver vos places</CardTitle>
-                    <div className="text-sm text-slate-600 mt-2">
-                        <p className="font-medium">{representation.titre}</p>
-                        <p>📅 {format(new Date(representation.date), 'EEEE d MMMM yyyy', { locale: fr })} à {representation.heure}</p>
+        <Dialog open={open} onOpenChange={handleClose}>
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClose}
+                            disabled={submitting}
+                            className="h-8 w-8 p-0"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <DialogTitle>Réserver vos places</DialogTitle>
                     </div>
-                </CardHeader>
-                <CardContent>
+                    {loading ? (
+                        <DialogDescription>Chargement...</DialogDescription>
+                    ) : representation ? (
+                        <DialogDescription className="text-sm text-slate-600">
+                            <p className="font-medium">{representation.titre}</p>
+                            <p>📅 {format(new Date(representation.date), 'EEEE d MMMM yyyy', { locale: fr })} à {representation.heure}</p>
+                        </DialogDescription>
+                    ) : null}
+                </DialogHeader>
+
+                {loading ? (
+                    <div className="text-center p-8">Chargement...</div>
+                ) : !representation ? (
+                    <div className="text-center p-8 text-red-600">Représentation introuvable</div>
+                ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -161,7 +202,7 @@ export default function ReservationPage({
                                 value={formData.nbPlaces}
                                 onChange={handleNbPlacesChange}
                             >
-                                {Array.from({ length: 50 }, (_, i) => i + 1).map(n => (
+                                {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
                                     <option key={n} value={n}>{n} place{n > 1 ? 's' : ''}</option>
                                 ))}
                             </select>
@@ -208,7 +249,7 @@ export default function ReservationPage({
 
                             {!formData.pmr && (
                                 <p className="text-xs text-slate-500">
-                                    Nous placerons automatiquement vos sièges côte à côte.
+                                    Nous placerons automatiquement vos sièges côte à côté.
                                 </p>
                             )}
                         </div>
@@ -223,8 +264,8 @@ export default function ReservationPage({
                             {submitting ? 'Réservation en cours...' : 'Confirmer la réservation'}
                         </Button>
                     </form>
-                </CardContent>
-            </Card>
-        </div>
+                )}
+            </DialogContent>
+        </Dialog>
     )
 }

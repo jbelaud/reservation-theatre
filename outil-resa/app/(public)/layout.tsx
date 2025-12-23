@@ -9,7 +9,7 @@ export default function PublicLayout({
                 {children}
             </main>
             <footer className="text-center py-6 text-slate-500 text-sm">
-                <p>Propulsé par Seatly - Outil de réservation pour associations</p>
+                <p>Propulsé par Resavo - Outil de réservation pour associations</p>
             </footer>
         </div>
     )

@@ -4,8 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ReservationList } from '@/components/reservation-list'
 import { ManualReservationModal } from '@/components/manual-reservation-modal'
-import { updateReservationStatus } from './actions'
-import { useToast } from '@/components/ui/use-toast'
 import {
     Select,
     SelectContent,
@@ -22,7 +20,6 @@ export function ReservationsClient({
     representations: any[]
 }) {
     const router = useRouter()
-    const { toast } = useToast()
 
     const [selectedYear, setSelectedYear] = useState<string>('all')
     const [selectedRepresentationId, setSelectedRepresentationId] = useState<string>('all')
@@ -57,23 +54,6 @@ export function ReservationsClient({
         if (selectedYear !== 'all' && repDate.getFullYear().toString() !== selectedYear) return false
         return true
     }).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
-
-    const handleStatusChange = async (id: string, newStatus: string) => {
-        try {
-            await updateReservationStatus(id, newStatus)
-            toast({
-                title: "Statut mis à jour",
-                description: "Le statut de la réservation a été modifié avec succès.",
-            })
-            router.refresh()
-        } catch (error) {
-            toast({
-                title: "Erreur",
-                description: "Impossible de mettre à jour le statut.",
-                variant: "destructive"
-            })
-        }
-    }
 
     return (
         <div className="space-y-6">
@@ -118,7 +98,6 @@ export function ReservationsClient({
 
             <ReservationList
                 reservations={filteredReservations}
-                onStatusChange={handleStatusChange}
                 showRepresentation={true}
             />
         </div>
