@@ -43,17 +43,13 @@ export function ReservationsClient({
         return true
     })
 
-    // Filter representations for the dropdown based on selected year AND upcoming
+    // Filter representations for the dropdown based on selected year
     const filteredRepresentationOptions = representations.filter(rep => {
         const repDate = new Date(rep.rawDate)
-        const now = new Date()
-
-        // Only upcoming representations
-        if (repDate < now) return false
 
         if (selectedYear !== 'all' && repDate.getFullYear().toString() !== selectedYear) return false
         return true
-    }).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
+    }).sort((a, b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime())
 
     return (
         <div className="space-y-6">
