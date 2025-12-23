@@ -23,18 +23,19 @@ export function ImageUpload({ value, onChange, folder = 'associations', label = 
                     folder: folder,
                     maxFiles: 1,
                     resourceType: 'image',
-                    sources: ['local', 'url'],
+                    sources: ['local'],
                     multiple: false,
+                    clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
                 }}
                 onSuccess={(result: any) => {
                     setIsUploading(false)
-                    console.log('Upload success:', result)
+                    console.log(`[${folder}] Upload success:`, result)
                     if (result?.info?.public_id) {
                         onChange(result.info.public_id)
                     }
                 }}
                 onError={(error: any) => {
-                    console.error('Upload error:', error)
+                    console.error(`[${folder}] Upload error:`, error)
                     setIsUploading(false)
                 }}
             >
