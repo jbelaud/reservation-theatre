@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
+import { ImageUpload } from '@/components/image-upload'
 
 export default function ParametresPage() {
     const [association, setAssociation] = useState<any>(null)
@@ -149,117 +150,23 @@ export default function ParametresPage() {
                             {/* Logo */}
                             <div className="space-y-4">
                                 <Label>Logo de l'association</Label>
-                                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors relative">
-                                    {formData.logo ? (
-                                        <div className="relative group">
-                                            <img
-                                                src={formData.logo}
-                                                alt="Logo"
-                                                className="h-32 w-auto mx-auto object-contain"
-                                            />
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                onClick={() => setFormData({ ...formData, logo: '' })}
-                                            >
-                                                Supprimer
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="py-8 text-gray-400">
-                                            <div className="mb-2">Aucun logo</div>
-                                        </div>
-                                    )}
-                                    <Input
-                                        type="file"
-                                        accept="image/*"
-                                        className="mt-4"
-                                        onChange={async (e) => {
-                                            const file = e.target.files?.[0]
-                                            if (!file) return
-
-                                            const data = new FormData()
-                                            data.append('file', file)
-
-                                            try {
-                                                const res = await fetch('/api/upload', {
-                                                    method: 'POST',
-                                                    body: data
-                                                })
-                                                const json = await res.json()
-                                                if (json.success) {
-                                                    setFormData(prev => ({ ...prev, logo: json.url }))
-                                                    toast({ title: "Logo téléchargé" })
-                                                }
-                                            } catch (err) {
-                                                toast({
-                                                    title: "Erreur",
-                                                    description: "Échec du téléchargement",
-                                                    variant: "destructive"
-                                                })
-                                            }
-                                        }}
-                                    />
-                                </div>
+                                <ImageUpload
+                                    value={formData.logo}
+                                    onChange={(url) => setFormData({ ...formData, logo: url })}
+                                    folder="associations/logos"
+                                    label="Télécharger le logo"
+                                />
                             </div>
 
                             {/* Affiche */}
                             <div className="space-y-4">
                                 <Label>Affiche du spectacle</Label>
-                                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors relative">
-                                    {formData.affiche ? (
-                                        <div className="relative group">
-                                            <img
-                                                src={formData.affiche}
-                                                alt="Affiche"
-                                                className="h-48 w-auto mx-auto object-contain shadow-md"
-                                            />
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                onClick={() => setFormData({ ...formData, affiche: '' })}
-                                            >
-                                                Supprimer
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="py-16 text-gray-400">
-                                            <div className="mb-2">Aucune affiche</div>
-                                        </div>
-                                    )}
-                                    <Input
-                                        type="file"
-                                        accept="image/*"
-                                        className="mt-4"
-                                        onChange={async (e) => {
-                                            const file = e.target.files?.[0]
-                                            if (!file) return
-
-                                            const data = new FormData()
-                                            data.append('file', file)
-
-                                            try {
-                                                const res = await fetch('/api/upload', {
-                                                    method: 'POST',
-                                                    body: data
-                                                })
-                                                const json = await res.json()
-                                                if (json.success) {
-                                                    setFormData(prev => ({ ...prev, affiche: json.url }))
-                                                    toast({ title: "Affiche téléchargée" })
-                                                }
-                                            } catch (err) {
-                                                toast({
-                                                    title: "Erreur",
-                                                    description: "Échec du téléchargement",
-                                                    variant: "destructive"
-                                                })
-                                            }
-                                        }}
-                                    />
-                                </div>
+                                <ImageUpload
+                                    value={formData.affiche}
+                                    onChange={(url) => setFormData({ ...formData, affiche: url })}
+                                    folder="associations/affiches"
+                                    label="Télécharger l'affiche"
+                                />
                             </div>
                         </div>
                     </CardContent>
