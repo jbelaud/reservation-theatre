@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card'
 import { ReservationModal } from '@/components/reservation-modal'
 import { ConfirmationModal } from '@/components/confirmation-modal'
 import { CldImage } from 'next-cloudinary'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 
 export default function AssociationPage({
     params
@@ -23,6 +24,7 @@ export default function AssociationPage({
     const [reservationModalOpen, setReservationModalOpen] = useState(false)
     const [confirmationModalOpen, setConfirmationModalOpen] = useState(false)
     const [confirmedReservationId, setConfirmedReservationId] = useState<string>('')
+    const [posterModalOpen, setPosterModalOpen] = useState(false)
 
     useEffect(() => {
         params.then(({ slug: resolvedSlug }) => {
@@ -80,15 +82,16 @@ export default function AssociationPage({
 
             <div className="grid md:grid-cols-12 gap-8">
                 {/* Colonne de gauche : Affiche */}
-                <div className="md:col-span-4">
+                <div className="md:col-span-5">
                     {association.affiche ? (
                         <div className="sticky top-8">
                             <CldImage
                                 src={association.affiche}
                                 alt="Affiche du spectacle"
-                                width="400"
-                                height="600"
-                                className="w-full rounded-lg shadow-lg"
+                                width="500"
+                                height="750"
+                                className="w-full rounded-lg shadow-lg cursor-pointer hover:shadow-2xl transition-shadow"
+                                onClick={() => setPosterModalOpen(true)}
                             />
                         </div>
                     ) : (
@@ -99,7 +102,7 @@ export default function AssociationPage({
                 </div>
 
                 {/* Colonne de droite : Représentations */}
-                <div className="md:col-span-8 space-y-6">
+                <div className="md:col-span-7 space-y-6">
                     {association.representations.length === 0 ? (
                         <Card className="p-8 text-center text-slate-500">
                             Aucune représentation prévue pour le moment.
@@ -164,6 +167,21 @@ export default function AssociationPage({
                 reservationId={confirmedReservationId}
                 slug={slug}
             />
+
+            {/* Modal pour afficher l'affiche en grand */}
+            {association.affiche && (
+                <Dialog open={posterModalOpen} onOpenChange={setPosterModalOpen}>
+                    <DialogContent className="max-w-4xl p-0 bg-transparent border-none">
+                        <CldImage
+                            src={association.affiche}
+                            alt="Affiche du spectacle"
+                            width="1200"
+                            height="1800"
+                            className="w-full h-auto rounded-lg"
+                        />
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     )
 }
