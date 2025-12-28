@@ -54,31 +54,32 @@ export function ReservationList({ reservations, showRepresentation = false }: Re
     )
 
     const handleExport = () => {
-        const headers = ['Nom', 'Prénom', 'Téléphone', 'Email', 'Places', 'Sièges', 'Statut']
-        if (showRepresentation) {
-            headers.splice(4, 0, 'Représentation', 'Date')
+        const headers = ['Nom', 'Prénom', 'Places', 'Sièges']
+
+        const escapeCsvField = (field: string | number) => {
+            const str = String(field)
+            if (str.includes(';') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`
+            }
+            return str
         }
 
         const csvContent = [
-            headers.join(','),
+            headers.join(';'),
             ...filteredReservations.map((r) => {
+                const sieges = parseSieges(r.sieges).join(' ')
                 const row = [
-                    r.nom,
-                    r.prenom,
-                    r.telephone,
-                    r.email || '',
+                    escapeCsvField(r.nom),
+                    escapeCsvField(r.prenom),
                     r.nbPlaces,
-                    `"${parseSieges(r.sieges).join(', ')}"`,
-                    r.statut,
+                    escapeCsvField(sieges),
                 ]
-                if (showRepresentation) {
-                    row.splice(4, 0, r.representationTitle || '', r.representationDate || '')
-                }
-                return row.join(',')
+                return row.join(';')
             }),
         ].join('\n')
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const BOM = '\uFEFF'
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
         const link = document.createElement('a')
         link.href = URL.createObjectURL(blob)
         link.download = `reservations_${format(new Date(), 'yyyy-MM-dd')}.csv`
@@ -112,13 +113,12 @@ export function ReservationList({ reservations, showRepresentation = false }: Re
                             {showRepresentation && <TableHead>Représentation</TableHead>}
                             <TableHead>Places</TableHead>
                             <TableHead>Sièges</TableHead>
-                            <TableHead>Statut</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredReservations.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={showRepresentation ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={showRepresentation ? 5 : 4} className="text-center py-8 text-muted-foreground">
                                     Aucune réservation trouvée
                                 </TableCell>
                             </TableRow>
@@ -147,17 +147,6 @@ export function ReservationList({ reservations, showRepresentation = false }: Re
                                                 </Badge>
                                             ))}
                                         </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant={
-                                                resa.statut === 'annulé'
-                                                    ? 'destructive'
-                                                    : 'outline'
-                                            }
-                                        >
-                                            {resa.statut}
-                                        </Badge>
                                     </TableCell>
                                 </TableRow>
                             ))
