@@ -41,10 +41,10 @@ async function main() {
     const plan = await prisma.planSalle.update({
         where: { associationId: testUser.id },
         data: {
-            structure: {
+            structure: JSON.stringify({
                 rangees: structure.rangees,
                 configuration: structure.configuration
-            },
+            }),
             capaciteTotal,
             configuration: structure.configuration
         }

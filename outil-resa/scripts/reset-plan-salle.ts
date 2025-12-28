@@ -23,10 +23,10 @@ async function main() {
         where: { associationId: testUser.id },
         data: {
             capaciteTotal: 0,
-            structure: {
+            structure: JSON.stringify({
                 rangees: [],
                 configuration: 'standard'
-            }
+            })
         }
     })
 
@@ -37,7 +37,7 @@ async function main() {
         where: { associationId: testUser.id },
         data: {
             capacite: 0,
-            placesOccupees: []
+            placesOccupees: '[]'
         }
     })
 

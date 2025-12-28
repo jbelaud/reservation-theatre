@@ -17,6 +17,15 @@ import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth-edge'
 import { DashboardHeader } from '@/components/admin/dashboard-header'
 
+ interface ShowWithReservations {
+     id: string
+     titre: string
+     date: Date
+     heure: string
+     capacite: number
+     reservations: Array<{ nbPlaces: number }>
+ }
+
 async function getDashboardData(associationId: string) {
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -78,7 +87,7 @@ async function getDashboardData(associationId: string) {
     let totalFillRate = 0
     let showsWithCapacity = 0
 
-    activeShows.forEach(show => {
+    ;(activeShows as ShowWithReservations[]).forEach((show) => {
         if (show.capacite > 0) {
             const reserved = show.reservations.reduce((acc, r) => acc + r.nbPlaces, 0)
             totalFillRate += (reserved / show.capacite) * 100
@@ -90,7 +99,7 @@ async function getDashboardData(associationId: string) {
 
     return {
         associationName: association?.nom || 'Théâtre',
-        upcomingShows: upcomingShows.map(show => {
+        upcomingShows: (upcomingShows as ShowWithReservations[]).map((show) => {
             const reserved = show.reservations.reduce((acc, r) => acc + r.nbPlaces, 0)
             const fillRate = show.capacite > 0 ? Math.round((reserved / show.capacite) * 100) : 0
             return {

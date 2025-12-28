@@ -53,9 +53,24 @@ export function parseSieges(value: unknown): string[] {
     return parseJsonField<string[]>(value, [])
 }
 
+export type PlanConfiguration = 'standard' | 'french'
+
+export interface PlanStructure {
+    rangees: any[]
+    configuration?: PlanConfiguration
+}
+
 /**
  * Parse la structure du plan de salle
  */
-export function parsePlanStructure(value: unknown): { rangees: any[]; configuration?: string } {
-    return parseJsonField(value, { rangees: [], configuration: 'standard' })
+export function parsePlanStructure(value: unknown): PlanStructure {
+    const parsed = parseJsonField<{ rangees: unknown; configuration?: unknown }>(
+        value,
+        { rangees: [], configuration: 'standard' }
+    )
+
+    const rangees = Array.isArray(parsed.rangees) ? (parsed.rangees as any[]) : []
+    const configuration: PlanConfiguration = parsed.configuration === 'french' ? 'french' : 'standard'
+
+    return { rangees, configuration }
 }

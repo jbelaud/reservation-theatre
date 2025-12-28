@@ -12,13 +12,30 @@ import { ConfirmationModal } from '@/components/confirmation-modal'
 import { CldImage } from 'next-cloudinary'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 
+interface Representation {
+    id: string
+    titre: string
+    date: string
+    heure: string
+    capacite: number
+    description?: string
+    placesOccupees: unknown
+}
+
+interface Association {
+    nom: string
+    logo?: string
+    affiche?: string
+    representations: Representation[]
+}
+
 export default function AssociationPage({
     params
 }: {
     params: Promise<{ slug: string }>
 }) {
     const [slug, setSlug] = useState<string>('')
-    const [association, setAssociation] = useState<any>(null)
+    const [association, setAssociation] = useState<Association | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedRepresentationId, setSelectedRepresentationId] = useState<string | null>(null)
     const [reservationModalOpen, setReservationModalOpen] = useState(false)
@@ -40,7 +57,7 @@ export default function AssociationPage({
                 .catch(() => notFound())
                 .finally(() => setLoading(false))
         })
-    }, [])
+    }, [params])
 
     const handleReserverClick = (representationId: string) => {
         setSelectedRepresentationId(representationId)
@@ -108,7 +125,7 @@ export default function AssociationPage({
                             Aucune représentation prévue pour le moment.
                         </Card>
                     ) : (
-                        association.representations.map((representation) => {
+                        association.representations.map((representation: Representation) => {
                             const placesOccupees = parsePlacesOccupees(representation.placesOccupees)
                             const placesRestantes = representation.capacite - placesOccupees.length
 

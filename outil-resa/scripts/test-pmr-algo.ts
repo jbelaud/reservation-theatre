@@ -22,13 +22,16 @@ async function main() {
     // On va plutôt tester l'algorithme directement avec un plan simulé pour aller vite et ne pas polluer la DB
     console.log('--- Simulation Algorithme ---')
 
-    const planSimule = {
+    const planSimule: {
+        configuration: 'standard' | 'french'
+        rangees: Array<{ id: string; sieges: number; pmr?: number[] }>
+    } = {
         configuration: 'standard', // ou 'french'
         rangees: [
             { id: 'A', sieges: 10, pmr: [1, 2] }, // A1 et A2 sont PMR
             { id: 'B', sieges: 10, pmr: [] }
         ]
-    } as any
+    }
 
     const placesOccupees: string[] = [] // Tout est libre
 
@@ -36,7 +39,7 @@ async function main() {
 
     // Test 1: Réservation Standard (Non PMR)
     console.log('\n📅 Test 1: Réservation Standard (2 places)')
-    const placesStandard = trouverPlaces(2, planSimule, placesOccupees, false)
+    const placesStandard = trouverPlaces(2, planSimule, placesOccupees, 0)
     console.log('Résultat:', placesStandard)
 
     // Attendu: Pas A1, A2. Donc A3, A4 (si algo centre -> le centre est 5. A5, A6 devrait être pris)
@@ -45,13 +48,13 @@ async function main() {
 
     // Test 2: Réservation PMR (2 places)
     console.log('\n♿ Test 2: Réservation PMR (2 places)')
-    const placesPMR = trouverPlaces(2, planSimule, placesOccupees, true)
+    const placesPMR = trouverPlaces(2, planSimule, placesOccupees, 1)
     console.log('Résultat:', placesPMR)
     // Attendu: A1, A2 (car ce sont les seuls PMR et ils sont contigus [1, 2])
 
     // Test 3: Réservation PMR (trop grande)
     console.log('\n♿ Test 3: Réservation PMR (3 places - impossible)')
-    const placesPMRTrop = trouverPlaces(3, planSimule, placesOccupees, true)
+    const placesPMRTrop = trouverPlaces(3, planSimule, placesOccupees, 1)
     console.log('Résultat:', placesPMRTrop)
     // Attendu: null
 
