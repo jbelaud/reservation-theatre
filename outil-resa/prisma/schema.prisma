@@ -6,16 +6,16 @@ generator client {
 
 // ⚡ SQLite - Base de données locale ultra-rapide
 // Pour revenir à PostgreSQL/Neon, décommentez ci-dessous et commentez SQLite
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
+// datasource db {
+//   provider = "sqlite"
+//   url      = env("DATABASE_URL")
+// }
 
 // BACKUP PostgreSQL (Neon) - Décommenter pour revenir en arrière
-// datasource db {
-//   provider = "postgresql"
-//   url      = env("DATABASE_URL_NEON")
-// }
+ datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_NEON")
+}
 
 model Association {
   id              String   @id @default(cuid())
