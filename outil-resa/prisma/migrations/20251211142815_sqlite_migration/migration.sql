@@ -7,12 +7,12 @@ CREATE TABLE "Association" (
     "password" TEXT NOT NULL,
     "telephone" TEXT,
     "licenceActive" BOOLEAN NOT NULL DEFAULT true,
-    "licenceExpire" DATETIME,
+    "licenceExpire" TIMESTAMP(3),
     "logo" TEXT,
     "affiche" TEXT,
     "couleurTheme" TEXT NOT NULL DEFAULT '#1e40af',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -21,8 +21,8 @@ CREATE TABLE "Admin" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "nom" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -33,8 +33,8 @@ CREATE TABLE "PlanSalle" (
     "structure" TEXT NOT NULL,
     "configuration" TEXT NOT NULL DEFAULT 'standard',
     "associationId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "PlanSalle_associationId_fkey" FOREIGN KEY ("associationId") REFERENCES "Association" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -42,7 +42,7 @@ CREATE TABLE "PlanSalle" (
 CREATE TABLE "Representation" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "titre" TEXT NOT NULL DEFAULT 'Représentation',
-    "date" DATETIME NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
     "heure" TEXT NOT NULL,
     "capacite" INTEGER NOT NULL,
     "description" TEXT,
@@ -50,8 +50,8 @@ CREATE TABLE "Representation" (
     "placesPmr" TEXT NOT NULL DEFAULT '[]',
     "statut" TEXT NOT NULL DEFAULT 'planifie',
     "associationId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Representation_associationId_fkey" FOREIGN KEY ("associationId") REFERENCES "Association" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -67,8 +67,8 @@ CREATE TABLE "Reservation" (
     "statut" TEXT NOT NULL DEFAULT 'confirmé',
     "notes" TEXT,
     "representationId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Reservation_representationId_fkey" FOREIGN KEY ("representationId") REFERENCES "Representation" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
