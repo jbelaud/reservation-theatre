@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-    const email = process.argv[2] || 'ets-belaud@gmail.com'
+    const email = process.argv[2] || 'ets.belaud@gmail.com'
     const newPassword = process.argv[3]
 
     if (!newPassword) {

@@ -8,27 +8,45 @@ async function main() {
     console.log('🌱 Démarrage du seed...')
 
     // Hasher le mot de passe
-    const adminPassword = 'test123'
-    const hashedPassword = await bcrypt.hash(adminPassword, 10)
+    const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)
+    const adminEmail = process.env.ADMIN_EMAIL || 'ets.belaud@gmail.com'
+    const adminPassword = process.env.ADMIN_PASSWORD
+    if (isProduction && !adminPassword) {
+        throw new Error('Missing required env var: ADMIN_PASSWORD')
+    }
+
+    const effectiveAdminPassword = adminPassword || 'test123'
+    const hashedPassword = await bcrypt.hash(effectiveAdminPassword, 10)
 
     // Créer le compte admin Resavo
     const admin = await prisma.admin.upsert({
-        where: { email: 'ets-belaud@gmail.com' },
-        update: {
-            password: hashedPassword,
-            nom: 'Admin Resavo'
-        },
+        where: { email: adminEmail },
+        update: adminPassword
+            ? {
+                password: hashedPassword,
+                nom: 'Admin Resavo'
+            }
+            : {
+                nom: 'Admin Resavo'
+            },
         create: {
-            email: 'ets-belaud@gmail.com',
+            email: adminEmail,
             password: hashedPassword,
             nom: 'Admin Resavo'
         }
     })
 
     console.log('✅ Compte admin créé :')
-    console.log('   Email: ets-belaud@gmail.com')
-    console.log('   Mot de passe: test123')
+    console.log('   Email:', admin.email)
+    if (!isProduction) {
+        console.log('   Mot de passe:', effectiveAdminPassword)
+    }
     console.log('   ID:', admin.id)
+
+    if (isProduction) {
+        console.log('\n🎉 Seed terminé avec succès !')
+        return
+    }
 
     // Créer un utilisateur de test
     const testUser = await prisma.association.upsert({
