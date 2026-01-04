@@ -8,12 +8,16 @@ async function main() {
     console.log('🌱 Démarrage du seed...')
 
     // Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash('test123', 10)
+    const adminPassword = 'test123'
+    const hashedPassword = await bcrypt.hash(adminPassword, 10)
 
     // Créer le compte admin Resavo
     const admin = await prisma.admin.upsert({
         where: { email: 'ets-belaud@gmail.com' },
-        update: {},
+        update: {
+            password: hashedPassword,
+            nom: 'Admin Resavo'
+        },
         create: {
             email: 'ets-belaud@gmail.com',
             password: hashedPassword,

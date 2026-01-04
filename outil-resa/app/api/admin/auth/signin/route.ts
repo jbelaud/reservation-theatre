@@ -29,7 +29,24 @@ export async function POST(request: NextRequest) {
         }
 
         // Vérifier le mot de passe
-        const isValid = await bcrypt.compare(password, admin.password)
+        if (!admin.password || typeof admin.password !== 'string') {
+            console.error('Admin login error: invalid password value in database for', admin.email)
+            return NextResponse.json(
+                { error: 'Identifiants invalides' },
+                { status: 401 }
+            )
+        }
+
+        let isValid = false
+        try {
+            isValid = await bcrypt.compare(password, admin.password)
+        } catch (error) {
+            console.error('Admin login error: bcrypt compare failed for', admin.email, error)
+            return NextResponse.json(
+                { error: 'Identifiants invalides' },
+                { status: 401 }
+            )
+        }
 
         if (!isValid) {
             return NextResponse.json(
