@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation'
 const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Gestion Resavo', href: '/admin/dashboard/resavo', icon: Building2 },
-    { name: 'Paramètres', href: '/admin/dashboard/parametres', icon: Settings },
 ]
 
 export function AdminSidebar() {

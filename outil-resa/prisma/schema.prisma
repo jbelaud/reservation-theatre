@@ -39,6 +39,7 @@ model Association {
   
   representations Representation[]
   plansSalle      PlanSalle[]
+  paiements       Paiement[]
 }
 
 model Admin {
@@ -101,4 +102,17 @@ model Reservation {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Paiement {
+  id            String   @id @default(cuid())
+  montant       Float    @default(299)
+  datePaiement  DateTime @default(now())
+  anneeCouverte Int      // Ex: 2026
+  notes         String?
+  
+  associationId String
+  association   Association @relation(fields: [associationId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
 }

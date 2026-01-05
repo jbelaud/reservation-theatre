@@ -2,32 +2,32 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Calendar, Ticket } from 'lucide-react'
+import { Users, CheckCircle, Euro } from 'lucide-react'
 
 interface Stats {
     totalAssociations: number
-    totalRepresentations: number
     activeLicences: number
+    revenusEstimes: number
 }
 
 export default function AdminDashboardPage() {
     const [stats, setStats] = useState<Stats>({
         totalAssociations: 0,
-        totalRepresentations: 0,
-        activeLicences: 0
+        activeLicences: 0,
+        revenusEstimes: 0
     })
 
     useEffect(() => {
-        // Pour l'instant on mock les stats ou on les récupère via l'API associations
         fetch('/api/admin/associations')
             .then(res => res.json())
             .then(data => {
                 if (data.associations) {
                     const assocs = data.associations
+                    const activeLicences = assocs.filter((a: any) => a.licenceActive).length
                     setStats({
                         totalAssociations: assocs.length,
-                        totalRepresentations: assocs.reduce((acc: number, curr: any) => acc + curr.nbRepresentations, 0),
-                        activeLicences: assocs.filter((a: any) => a.licenceActive).length
+                        activeLicences,
+                        revenusEstimes: activeLicences * 299
                     })
                 }
             })
@@ -54,7 +54,7 @@ export default function AdminDashboardPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.totalAssociations}</div>
                         <p className="text-xs text-muted-foreground">
-                            {stats.activeLicences} licences actives
+                            Comptes créés sur la plateforme
                         </p>
                     </CardContent>
                 </Card>
@@ -62,29 +62,29 @@ export default function AdminDashboardPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                            Représentations
+                            Licences Actives
                         </CardTitle>
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalRepresentations}</div>
+                        <div className="text-2xl font-bold">{stats.activeLicences}</div>
                         <p className="text-xs text-muted-foreground">
-                            Sur toute la plateforme
+                            Associations avec licence valide
                         </p>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Revenus estimés
+                        <CardTitle className="text-sm font-medium text-green-800">
+                            Revenus Annuels Estimés
                         </CardTitle>
-                        <Ticket className="h-4 w-4 text-muted-foreground" />
+                        <Euro className="h-4 w-4 text-green-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">0 €</div>
-                        <p className="text-xs text-muted-foreground">
-                            Module de paiement non actif
+                        <div className="text-2xl font-bold text-green-700">{stats.revenusEstimes} €</div>
+                        <p className="text-xs text-green-600">
+                            {stats.activeLicences} licence{stats.activeLicences > 1 ? 's' : ''} × 299€/an
                         </p>
                     </CardContent>
                 </Card>

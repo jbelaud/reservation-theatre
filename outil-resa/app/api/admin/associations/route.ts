@@ -26,6 +26,10 @@ export async function GET(request: NextRequest) {
                         representations: true,
                         plansSalle: true
                     }
+                },
+                paiements: {
+                    orderBy: { datePaiement: 'desc' },
+                    take: 5
                 }
             },
             orderBy: {
@@ -44,7 +48,8 @@ export async function GET(request: NextRequest) {
             licenceExpire: assoc.licenceExpire,
             createdAt: assoc.createdAt,
             nbRepresentations: assoc._count.representations,
-            nbPlansSalle: assoc._count.plansSalle
+            nbPlansSalle: assoc._count.plansSalle,
+            paiements: assoc.paiements
         }))
 
         return NextResponse.json({ associations: formattedAssociations })

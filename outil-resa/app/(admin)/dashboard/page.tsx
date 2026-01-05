@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, Users, Percent } from 'lucide-react'
+import { Calendar, Users, Percent, Copy, CreditCard } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,15 +16,23 @@ import { Badge } from "@/components/ui/badge"
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth-edge'
 import { DashboardHeader } from '@/components/admin/dashboard-header'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 
- interface ShowWithReservations {
-     id: string
-     titre: string
-     date: Date
-     heure: string
-     capacite: number
-     reservations: Array<{ nbPlaces: number }>
- }
+interface ShowWithReservations {
+    id: string
+    titre: string
+    date: Date
+    heure: string
+    capacite: number
+    reservations: Array<{ nbPlaces: number }>
+}
 
 async function getDashboardData(associationId: string) {
     const now = new Date()
@@ -36,7 +44,11 @@ async function getDashboardData(associationId: string) {
         // 1. Récupérer l'association
         prisma.association.findUnique({
             where: { id: associationId },
-            select: { nom: true }
+            select: {
+                nom: true,
+                licenceActive: true,
+                licenceExpire: true
+            }
         }),
 
         // 2. Représentations à venir (pour la table)
@@ -87,18 +99,20 @@ async function getDashboardData(associationId: string) {
     let totalFillRate = 0
     let showsWithCapacity = 0
 
-    ;(activeShows as ShowWithReservations[]).forEach((show) => {
-        if (show.capacite > 0) {
-            const reserved = show.reservations.reduce((acc, r) => acc + r.nbPlaces, 0)
-            totalFillRate += (reserved / show.capacite) * 100
-            showsWithCapacity++
-        }
-    })
+        ; (activeShows as ShowWithReservations[]).forEach((show) => {
+            if (show.capacite > 0) {
+                const reserved = show.reservations.reduce((acc, r) => acc + r.nbPlaces, 0)
+                totalFillRate += (reserved / show.capacite) * 100
+                showsWithCapacity++
+            }
+        })
 
     const averageFillRate = showsWithCapacity > 0 ? Math.round(totalFillRate / showsWithCapacity) : 0
 
     return {
         associationName: association?.nom || 'Théâtre',
+        licenceActive: association?.licenceActive ?? false,
+        licenceExpire: association?.licenceExpire,
         upcomingShows: (upcomingShows as ShowWithReservations[]).map((show) => {
             const reserved = show.reservations.reduce((acc, r) => acc + r.nbPlaces, 0)
             const fillRate = show.capacite > 0 ? Math.round((reserved / show.capacite) * 100) : 0
@@ -140,7 +154,13 @@ export default async function DashboardPage() {
         <div className="min-h-screen bg-[#F9FAFB]">
             {/* Header Section */}
             <div className="bg-white border-b border-gray-200 px-8 py-2.5 mb-8">
-                <DashboardHeader associationName={data.associationName} />
+                <div className="flex items-center justify-between">
+                    <LicenceStatus
+                        active={data.licenceActive}
+                        expireDate={data.licenceExpire ? data.licenceExpire.toISOString() : undefined}
+                    />
+                    <DashboardHeader associationName={data.associationName} />
+                </div>
             </div>
 
             <div className="max-w-[1600px] mx-auto px-8 space-y-8">
@@ -233,9 +253,7 @@ export default async function DashboardPage() {
 function StatCard({ title, value, icon: Icon }: any) {
     return (
         <Card className="border border-gray-100 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)] rounded-2xl relative overflow-hidden group hover:shadow-md transition-shadow bg-white">
-            {/* Blue top bar */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600 w-16 rounded-br-full" />
-
             <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                     <div>
@@ -248,5 +266,98 @@ function StatCard({ title, value, icon: Icon }: any) {
                 </div>
             </CardContent>
         </Card>
+    )
+}
+
+function LicenceStatus({ active, expireDate }: { active: boolean, expireDate?: string }) {
+    if (!active) {
+        return (
+            <div className="flex items-center gap-4 bg-red-50 px-4 py-2 rounded-lg border border-red-200">
+                <div className="flex flex-col">
+                    <span className="text-red-700 font-semibold text-sm">Licence Inactive</span>
+                    <span className="text-red-500 text-xs">Votre compte est désactivé</span>
+                </div>
+                <Button variant="destructive" size="sm">
+                    Contacter l'administrateur
+                </Button>
+            </div>
+        )
+    }
+
+    const expire = expireDate ? new Date(expireDate) : null
+    const now = new Date()
+    const isExpiringSoon = expire ? (expire.getTime() - now.getTime()) / (1000 * 60 * 60 * 24) <= 30 : false
+
+    return (
+        <div className={`flex items-center gap-4 px-4 py-2 rounded-lg border ${isExpiringSoon ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'}`}>
+            <div className="flex flex-col">
+                <span className={`font-semibold text-sm ${isExpiringSoon ? 'text-orange-700' : 'text-green-700'}`}>
+                    Licence Active
+                </span>
+                {expire && (
+                    <span className={`text-xs ${isExpiringSoon ? 'text-orange-600' : 'text-green-600'}`}>
+                        Jusqu'au {expire.toLocaleDateString('fr-FR')}
+                    </span>
+                )}
+            </div>
+
+            <RibModal />
+        </div>
+    )
+}
+
+function RibModal() {
+    const rib = {
+        titulaire: "ETS BELAUD",
+        banque: "Banque Populaire",
+        iban: "FR76 1234 5678 9012 3456 7890 123",
+        bic: "BPOPFRPP"
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 text-xs border-green-200 text-green-700 hover:bg-green-100 uppercase font-semibold">
+                    Payer / Voir RIB
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Informations de paiement</DialogTitle>
+                    <DialogDescription>
+                        Effectuez un virement pour renouveler votre licence annuelle (299€).
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex items-center space-x-2">
+                    <div className="grid flex-1 gap-2 p-4 bg-slate-50 rounded-lg border">
+                        <div className="space-y-1">
+                            <p className="text-xs font-medium text-gray-500">TITULAIRE DU COMPTE</p>
+                            <p className="text-sm font-semibold">{rib.titulaire}</p>
+                        </div>
+                        <div className="space-y-1 mt-2">
+                            <p className="text-xs font-medium text-gray-500">IBAN</p>
+                            <div className="flex items-center justify-between bg-white p-2 rounded border">
+                                <code className="text-sm font-mono">{rib.iban}</code>
+                                {/* Client component needed for interactivity */}
+                            </div>
+                        </div>
+                        <div className="flex gap-4 mt-2">
+                            <div className="space-y-1 flex-1">
+                                <p className="text-xs font-medium text-gray-500">BIC / SWIFT</p>
+                                <p className="text-sm font-mono bg-white p-1 px-2 rounded border inline-block">{rib.bic}</p>
+                            </div>
+                            <div className="space-y-1 flex-1">
+                                <p className="text-xs font-medium text-gray-500">BANQUE</p>
+                                <p className="text-sm">{rib.banque}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-blue-50 text-blue-700 text-xs p-3 rounded-md flex gap-2">
+                    <CreditCard className="w-4 h-4 flex-shrink-0" />
+                    <p>Une fois le virement effectué, votre licence sera renouvelée automatiquement dans les 24h suivant la réception.</p>
+                </div>
+            </DialogContent>
+        </Dialog>
     )
 }

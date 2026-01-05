@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Users, Mail, Calendar, CheckCircle, XCircle, Pencil, Power, PowerOff } from 'lucide-react'
+import { Plus, Users, Mail, CheckCircle, XCircle, Pencil, Power, PowerOff, Euro, Calendar, CreditCard } from 'lucide-react'
 import {
     Dialog,
     DialogContent,
@@ -16,6 +16,14 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog'
+
+interface Paiement {
+    id: string
+    montant: number
+    datePaiement: string
+    anneeCouverte: number
+    notes?: string
+}
 
 interface Association {
     id: string
@@ -28,6 +36,7 @@ interface Association {
     createdAt: string
     nbRepresentations: number
     nbPlansSalle: number
+    paiements?: Paiement[]
 }
 
 export default function ResavoAdminPage() {
@@ -35,6 +44,7 @@ export default function ResavoAdminPage() {
     const [loading, setLoading] = useState(true)
     const [openDialog, setOpenDialog] = useState(false)
     const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; assoc: Association | null }>({ open: false, assoc: null })
+    const [paiementDialog, setPaiementDialog] = useState<{ open: boolean; assoc: Association | null }>({ open: false, assoc: null })
     const [editingId, setEditingId] = useState<string | null>(null)
     const [formData, setFormData] = useState({
         nom: '',
@@ -45,6 +55,7 @@ export default function ResavoAdminPage() {
     })
     const [error, setError] = useState('')
     const [creating, setCreating] = useState(false)
+    const [processingPayment, setProcessingPayment] = useState(false)
 
     useEffect(() => {
         fetchAssociations()
@@ -87,10 +98,7 @@ export default function ResavoAdminPage() {
                 return
             }
 
-            // Réinitialiser le formulaire et fermer la modale
             resetForm()
-
-            // Rafraîchir la liste
             fetchAssociations()
         } catch (err) {
             setError('Erreur de connexion au serveur')
@@ -116,7 +124,7 @@ export default function ResavoAdminPage() {
         setFormData({
             nom: assoc.nom,
             email: assoc.email,
-            password: '', // On ne remplit pas le mot de passe
+            password: '',
             telephone: assoc.telephone || '',
             slug: assoc.slug
         })
@@ -158,6 +166,62 @@ export default function ResavoAdminPage() {
             alert('Erreur serveur')
         }
     }
+
+    const handleRecordPayment = (assoc: Association) => {
+        setPaiementDialog({ open: true, assoc })
+    }
+
+    const confirmPayment = async () => {
+        const assoc = paiementDialog.assoc
+        if (!assoc) return
+
+        setProcessingPayment(true)
+        try {
+            const res = await fetch(`/api/admin/associations/${assoc.id}/paiement`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ montant: 299 })
+            })
+
+            if (res.ok) {
+                fetchAssociations()
+                setPaiementDialog({ open: false, assoc: null })
+            } else {
+                const data = await res.json()
+                alert(data.error || 'Erreur lors de l\'enregistrement du paiement')
+            }
+        } catch (err) {
+            console.error(err)
+            alert('Erreur serveur')
+        } finally {
+            setProcessingPayment(false)
+        }
+    }
+
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return 'Non définie'
+        return new Date(dateString).toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        })
+    }
+
+    const isLicenceExpiringSoon = (dateString?: string) => {
+        if (!dateString) return false
+        const expireDate = new Date(dateString)
+        const now = new Date()
+        const diffDays = Math.ceil((expireDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        return diffDays <= 30 && diffDays > 0
+    }
+
+    const isLicenceExpired = (dateString?: string) => {
+        if (!dateString) return false
+        return new Date(dateString) < new Date()
+    }
+
+    const activeLicences = associations.filter(a => a.licenceActive).length
+    const revenusEstimes = activeLicences * 299
 
     return (
         <div className="p-8 space-y-6">
@@ -259,7 +323,7 @@ export default function ResavoAdminPage() {
                     </DialogContent>
                 </Dialog>
 
-                {/* Dialog de confirmation */}
+                {/* Dialog de confirmation désactivation */}
                 <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
                     <DialogContent>
                         <DialogHeader>
@@ -277,6 +341,43 @@ export default function ResavoAdminPage() {
                                 onClick={confirmToggle}
                             >
                                 {confirmDialog.assoc?.licenceActive ? 'Désactiver' : 'Activer'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Dialog d'enregistrement de paiement */}
+                <Dialog open={paiementDialog.open} onOpenChange={(open) => setPaiementDialog({ ...paiementDialog, open })}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Enregistrer un paiement</DialogTitle>
+                            <DialogDescription>
+                                Confirmez la réception du paiement de <strong>{paiementDialog.assoc?.nom}</strong>.
+                                La licence sera renouvelée pour 1 an.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div className="flex items-center gap-3">
+                                    <Euro className="w-8 h-8 text-green-600" />
+                                    <div>
+                                        <p className="font-bold text-green-800 text-xl">299 €</p>
+                                        <p className="text-sm text-green-600">Licence annuelle</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setPaiementDialog({ open: false, assoc: null })}>
+                                Annuler
+                            </Button>
+                            <Button
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={confirmPayment}
+                                disabled={processingPayment}
+                            >
+                                <CreditCard className="w-4 h-4 mr-2" />
+                                {processingPayment ? 'Enregistrement...' : 'Confirmer le paiement'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -307,25 +408,21 @@ export default function ResavoAdminPage() {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-600">Licences actives</p>
-                                <p className="text-2xl font-bold">
-                                    {associations.filter(a => a.licenceActive).length}
-                                </p>
+                                <p className="text-2xl font-bold">{activeLicences}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-100 rounded-lg">
-                                <Calendar className="w-6 h-6 text-blue-600" />
+                            <div className="p-3 bg-green-200 rounded-lg">
+                                <Euro className="w-6 h-6 text-green-700" />
                             </div>
                             <div>
-                                <p className="text-sm text-gray-600">Total représentations</p>
-                                <p className="text-2xl font-bold">
-                                    {associations.reduce((sum, a) => sum + a.nbRepresentations, 0)}
-                                </p>
+                                <p className="text-sm text-green-700">Revenus annuels estimés</p>
+                                <p className="text-2xl font-bold text-green-800">{revenusEstimes} €</p>
                             </div>
                         </div>
                     </CardContent>
@@ -355,24 +452,43 @@ export default function ResavoAdminPage() {
                                     className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                                 >
                                     <div className="flex items-start justify-between">
-                                        <div className="space-y-2 flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <h3 className="font-semibold text-lg">{assoc.nom}</h3>
-                                                    {assoc.licenceActive ? (
-                                                        <Badge variant="default" className="gap-1">
-                                                            <CheckCircle className="w-3 h-3" />
-                                                            Active
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge variant="destructive" className="gap-1">
-                                                            <XCircle className="w-3 h-3" />
-                                                            Inactive
-                                                        </Badge>
-                                                    )}
-                                                </div>
+                                        <div className="space-y-3 flex-1">
+                                            {/* Nom et statut */}
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                                <h3 className="font-semibold text-lg">{assoc.nom}</h3>
+                                                {assoc.licenceActive ? (
+                                                    <Badge variant="default" className="gap-1">
+                                                        <CheckCircle className="w-3 h-3" />
+                                                        Active
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="destructive" className="gap-1">
+                                                        <XCircle className="w-3 h-3" />
+                                                        Inactive
+                                                    </Badge>
+                                                )}
+                                                {isLicenceExpiringSoon(assoc.licenceExpire) && (
+                                                    <Badge variant="outline" className="gap-1 border-orange-300 text-orange-600 bg-orange-50">
+                                                        Expire bientôt
+                                                    </Badge>
+                                                )}
+                                                {isLicenceExpired(assoc.licenceExpire) && (
+                                                    <Badge variant="outline" className="gap-1 border-red-300 text-red-600 bg-red-50">
+                                                        Expirée
+                                                    </Badge>
+                                                )}
                                             </div>
-                                            <div className="flex items-center gap-2">
+
+                                            {/* Infos licence */}
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <Calendar className="w-4 h-4 text-gray-400" />
+                                                <span className="text-gray-600">
+                                                    Licence valable jusqu'au: <strong>{formatDate(assoc.licenceExpire)}</strong>
+                                                </span>
+                                            </div>
+
+                                            {/* Boutons d'action */}
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <Button variant="ghost" size="sm" onClick={() => handleEdit(assoc)}>
                                                     <Pencil className="w-4 h-4 mr-2" />
                                                     Modifier
@@ -395,11 +511,20 @@ export default function ResavoAdminPage() {
                                                         </>
                                                     )}
                                                 </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleRecordPayment(assoc)}
+                                                    className="text-green-600 border-green-300 hover:bg-green-50"
+                                                >
+                                                    <CreditCard className="w-4 h-4 mr-2" />
+                                                    Enregistrer paiement
+                                                </Button>
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                                            <div className="flex items-center gap-1">
+                                        <div className="flex flex-col gap-2 text-sm text-gray-600 text-right">
+                                            <div className="flex items-center gap-1 justify-end">
                                                 <Mail className="w-4 h-4" />
                                                 {assoc.email}
                                             </div>
@@ -420,7 +545,7 @@ export default function ResavoAdminPage() {
                         </div>
                     )}
                 </CardContent>
-            </Card >
-        </div >
+            </Card>
+        </div>
     )
 }
