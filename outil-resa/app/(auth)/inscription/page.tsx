@@ -44,11 +44,11 @@ export default function InscriptionPage() {
                             Vous êtes une association intéressée ?
                         </p>
                         <a
-                            href="mailto:ets-belaud@gmail.com"
+                            href="mailto:ets.belaud@gmail.com"
                             className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
                         >
                             <Mail className="w-5 h-5" />
-                            ets-belaud@gmail.com
+                            ets.belaud@gmail.com
                         </a>
                     </div>
 

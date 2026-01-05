@@ -39,11 +39,11 @@ export default function Home() {
               Vous êtes une association intéressée par cet outil ?
             </p>
             <a
-              href="mailto:ets-belaud@gmail.com"
+              href="mailto:ets.belaud@gmail.com"
               className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium text-lg transition-colors"
             >
               <Mail className="w-5 h-5" />
-              ets-belaud@gmail.com
+              ets.belaud@gmail.com
             </a>
             <p className="text-sm text-gray-500 mt-2">
               Contactez-nous pour obtenir un accès à la plateforme
