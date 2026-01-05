@@ -39,7 +39,7 @@ export function ImageUpload({ value, onChange, folder = 'associations', label = 
                     setIsUploading(false)
                 }}
             >
-                {({ open }) => (
+                {({ open }: { open: any }) => (
                     <div>
                         {value ? (
                             <div className="relative">
