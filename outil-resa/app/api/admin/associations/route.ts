@@ -219,6 +219,20 @@ export async function PATCH(request: NextRequest) {
         // Mise à jour de la licence si fournie
         if (typeof licenceActive === 'boolean') {
             updateData.licenceActive = licenceActive
+
+            // Si on active la licence, on met à jour la date d'expiration si nécessaire
+            if (licenceActive) {
+                const now = new Date()
+                const expireDate = existingAssoc.licenceExpire ? new Date(existingAssoc.licenceExpire) : null
+
+                // Si pas de date ou date passée, on met +1 an à partir de maintenant
+                // Cela permet d'activer une association manuellement et d'avoir une date valide
+                if (!expireDate || expireDate < now) {
+                    const nextYear = new Date()
+                    nextYear.setFullYear(nextYear.getFullYear() + 1)
+                    updateData.licenceExpire = nextYear
+                }
+            }
         }
 
         // Gestion du changement d'email
@@ -274,6 +288,7 @@ export async function PATCH(request: NextRequest) {
                 email: updatedAssoc.email,
                 telephone: updatedAssoc.telephone,
                 licenceActive: updatedAssoc.licenceActive,
+                licenceExpire: updatedAssoc.licenceExpire,
                 createdAt: updatedAssoc.createdAt,
                 nbRepresentations: updatedAssoc._count.representations
             }
