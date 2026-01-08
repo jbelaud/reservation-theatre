@@ -184,7 +184,7 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
     }
 
     return (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 pb-32">
             {/* Éditeur */}
             <Card>
                 <CardHeader>
