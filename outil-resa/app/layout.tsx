@@ -17,9 +17,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Resavo - Gestion des réservations",
   description: "Simplifiez la gestion de vos réservations de théâtre avec notre outil intuitif",
-  icons: {
-    icon: '/favicon.png',
-  },
 };
 
 export default function RootLayout({

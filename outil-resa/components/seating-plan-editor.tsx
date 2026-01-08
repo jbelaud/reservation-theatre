@@ -128,7 +128,26 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
         // Supprimer les doublons et trier
         const uniqueSeats = Array.from(new Set(pmrSeats)).sort((a, b) => a - b)
 
+        const oldPmrCount = rangees[index].pmr?.length || 0
+        const newPmrCount = uniqueSeats.length
+
+        // Calculer la différence pour ajuster le nombre de sièges
+        // Si on ajoute 1 PMR, on enlève 1 siège (car 1 PMR = 2 places, dont 1 déjà comptée dans le nombre total)
+        // Donc si différence positive (+X PMR), on réduit le nombre de sièges de X
+        // Si différence négative (-X PMR), on rajoute X sièges (on libère de l'espace)
+        const delta = newPmrCount - oldPmrCount
+
         const newRangees = [...rangees]
+        if (delta !== 0) {
+            const newSeatCount = Math.max(1, newRangees[index].sieges - delta)
+            // S'assurer qu'on ne descend pas en dessous du max PMR défini
+            // (Ex: si on a seat 10 défini comme PMR, on ne peut pas avoir moins de 10 sièges logiquement 
+            // SAUF si le user veut juste réduire la capacité "physique" mais garder le numéro. 
+            // Mais ici on parle de "places" disponibles.
+            // On garde la logique simple demandée : "enlever une place à côté"
+            newRangees[index].sieges = newSeatCount
+        }
+
         newRangees[index].pmr = uniqueSeats
         setRangees(newRangees)
 
