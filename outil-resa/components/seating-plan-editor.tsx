@@ -40,8 +40,9 @@ export function SeatingPlanEditor({
     // États pour la modification globale - VIDE PAR DÉFAUT
     const [globalSeats, setGlobalSeats] = useState<string>('')
 
-    const totalPlaces = rangees.reduce((acc, r) => acc + r.sieges, 0)
     const totalPmr = rangees.reduce((acc, r) => acc + (r.pmr?.length || 0), 0)
+    const totalPhysicalPlaces = rangees.reduce((acc, r) => acc + r.sieges, 0)
+    const totalPlaces = pmrDouble ? totalPhysicalPlaces - totalPmr : totalPhysicalPlaces
 
     // State pour les inputs PMR (permet de taper "1-5" sans que ça se convertisse immédiatement)
     const [pmrInputs, setPmrInputs] = useState<Record<number, string>>(() => {
@@ -143,14 +144,7 @@ export function SeatingPlanEditor({
         // Si on ajoute 1 PMR, on enlève 1 siège (car 1 PMR = 2 places, dont 1 déjà comptée dans le nombre total)
         // Donc si différence positive (+X PMR), on réduit le nombre de sièges de X
         // Si différence négative (-X PMR), on rajoute X sièges (on libère de l'espace)
-        const delta = newPmrCount - oldPmrCount
-
         const newRangees = [...rangees]
-        if (delta !== 0 && pmrDouble) {
-            const newSeatCount = Math.max(1, newRangees[index].sieges - delta)
-            newRangees[index].sieges = newSeatCount
-        }
-
         newRangees[index].pmr = uniqueSeats
         setRangees(newRangees)
 
@@ -165,26 +159,7 @@ export function SeatingPlanEditor({
     }
 
     const handleTogglePmrDouble = () => {
-        const newValue = !pmrDouble
-        setPmrDouble(newValue)
-
-        // Ajuster TOUTES les rangées
-        const newRangees = rangees.map(rangee => {
-            const pmrCount = rangee.pmr?.length || 0
-            if (pmrCount === 0) return rangee
-
-            const newRangee = { ...rangee }
-            if (newValue) {
-                // On active "PMR prend 2 places" : on réduit le nombre de sièges
-                newRangee.sieges = Math.max(1, newRangee.sieges - pmrCount)
-            } else {
-                // On désactive : on rajoute les places libérées
-                newRangee.sieges = newRangee.sieges + pmrCount
-            }
-            return newRangee
-        })
-
-        setRangees(newRangees)
+        setPmrDouble(!pmrDouble)
     }
 
     const handleSave = async () => {
@@ -433,13 +408,17 @@ export function SeatingPlanEditor({
 
                     <div className="pt-4 border-t mt-4">
                         <div className="flex flex-col gap-1 mb-4">
+                            <div className="flex justify-between items-center text-sm text-gray-500">
+                                <span>Nombre de sièges physiques :</span>
+                                <span>{totalPhysicalPlaces}</span>
+                            </div>
                             <div className="flex justify-between items-center">
-                                <span className="font-semibold">Capacité totale :</span>
+                                <span className="font-semibold">Capacité de vente (tickets) :</span>
                                 <span className="text-xl font-bold text-blue-600">{totalPlaces} places</span>
                             </div>
                             {totalPmr > 0 && (
                                 <div className="flex justify-between items-center text-sm text-purple-700">
-                                    <span className="flex items-center gap-1"><Accessibility className="h-3 w-3" /> Dont PMR :</span>
+                                    <span className="flex items-center gap-1"><Accessibility className="h-3 w-3" /> Dont places PMR :</span>
                                     <span className="font-semibold">{totalPmr} places</span>
                                 </div>
                             )}

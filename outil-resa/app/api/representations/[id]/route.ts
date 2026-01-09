@@ -151,9 +151,11 @@ export async function GET(
 
         const placesOccupeesArray = parsePlacesOccupees(representation.placesOccupees)
 
-        const placesRestantes = representation.capacite - placesOccupeesArray.length
+        // Calculer les places restances par rapport aux TICkETS et non aux SIÈGES PHYSIQUES
+        const totalTicketsSold = representation.reservations.reduce((acc: number, r: any) => acc + (r.nbPlaces || 0), 0)
+        const placesRestantes = representation.capacite - totalTicketsSold
         const nbReservations = representation.reservations.length
-        const tauxRemplissage = Math.round((placesOccupeesArray.length / representation.capacite) * 100)
+        const tauxRemplissage = Math.round((totalTicketsSold / representation.capacite) * 100)
 
         // Parser les sièges de chaque réservation (String JSON en SQLite)
         const reservationsFormatted = representation.reservations.map((r: any) => {
@@ -167,7 +169,7 @@ export async function GET(
         })
 
         // Déterminer la structure à utiliser (override ou défaut)
-        let structure = representation.structure
+        let structure = (representation as any).structure
         if (!structure && representation.association.plansSalle?.[0]) {
             structure = representation.association.plansSalle[0].structure
         }

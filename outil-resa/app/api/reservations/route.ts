@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
         const representation = await prisma.representation.findUnique({
             where: { id: representationId },
             include: {
+                reservations: true, // Pour calculer la capacité réelle en tickets
                 association: {
                     include: {
                         plansSalle: true
@@ -59,14 +60,16 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // 3. Vérifier capacité globale (parse JSON pour SQLite)
-        const placesOccupeesActuelles = parsePlacesOccupees(representation.placesOccupees)
-        if (placesOccupeesActuelles.length + nbPlaces > representation.capacite) {
+        // 3. Vérifier capacité globale (basé sur les tickets vendus, pas les sièges physiques)
+        const totalTicketsSold = representation.reservations.reduce((acc, r) => acc + (r.nbPlaces || 0), 0)
+        if (totalTicketsSold + nbPlaces > representation.capacite) {
             return NextResponse.json(
                 { error: 'Plus assez de places disponibles' },
                 { status: 400 }
             )
         }
+
+        const placesOccupeesActuelles = parsePlacesOccupees(representation.placesOccupees)
 
         let placesAttribuees: string[]
 
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
             // MODE AUTOMATIQUE : Utiliser l'algorithme de placement
             // Utiliser la structure de la représentation (override) s'il y en a une,
             // sinon celle du plan de salle global
-            let finalStructure = representation.structure
+            let finalStructure = (representation as any).structure
             if (!finalStructure) {
                 const planSalle = representation.association.plansSalle[0]
                 if (!planSalle) {

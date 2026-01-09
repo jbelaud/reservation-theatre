@@ -58,19 +58,21 @@ export type PlanConfiguration = 'standard' | 'french'
 export interface PlanStructure {
     rangees: any[]
     configuration?: PlanConfiguration
+    pmrDouble?: boolean
 }
 
 /**
  * Parse la structure du plan de salle
  */
 export function parsePlanStructure(value: unknown): PlanStructure {
-    const parsed = parseJsonField<{ rangees: unknown; configuration?: unknown }>(
+    const parsed = parseJsonField<{ rangees: unknown; configuration?: unknown; pmrDouble?: unknown }>(
         value,
-        { rangees: [], configuration: 'standard' }
+        { rangees: [], configuration: 'standard', pmrDouble: true }
     )
 
     const rangees = Array.isArray(parsed.rangees) ? (parsed.rangees as any[]) : []
     const configuration: PlanConfiguration = parsed.configuration === 'french' ? 'french' : 'standard'
+    const pmrDouble = parsed.pmrDouble !== false
 
-    return { rangees, configuration }
+    return { rangees, configuration, pmrDouble }
 }

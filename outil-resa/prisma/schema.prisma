@@ -4,11 +4,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// ⚡ SQLite - Base de données locale ultra-rapide
-// Pour revenir à PostgreSQL/Neon, décommentez ci-dessous et commentez SQLite
+// ⚡ PostgreSQL/Neon - Base de données de production
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Association {

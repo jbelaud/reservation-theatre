@@ -5,6 +5,7 @@ interface PlanSalle {
         pmr?: number[]
     }>
     configuration?: 'standard' | 'french'
+    pmrDouble?: boolean
 }
 
 export function trouverPlaces(
@@ -26,24 +27,28 @@ export function trouverPlaces(
     })
 
     const isFrench = plan.configuration === 'french'
+    const pmrDouble = plan.pmrDouble === true
+    const totalSlotsNeeded = nbPlaces + (pmrDouble ? nbPmr : 0)
 
     // Stratégie 1: Une seule rangée
     for (const rangee of plan.rangees) {
         let places: string[]
         if (isFrench) {
-            places = chercherPlacesFrancaises(rangee, nbPlaces, placesLibres, nbPmr)
+            places = chercherPlacesFrancaises(rangee, totalSlotsNeeded, placesLibres, nbPmr)
         } else {
-            places = chercherConsecutifsCentre(rangee, nbPlaces, placesLibres, nbPmr)
+            places = chercherConsecutifsCentre(rangee, totalSlotsNeeded, placesLibres, nbPmr)
         }
 
-        if (places.length === nbPlaces) {
+        if (places.length === totalSlotsNeeded) {
             return places
         }
     }
 
     // Stratégie 2: Deux rangées si pair (et petit groupe)
+    // Note: On reste sur nbPlaces pour la logique de parité du groupe, 
+    // mais chercherSur2Rangees doit gérer les slots
     if (nbPlaces % 2 === 0 && nbPlaces <= 6) {
-        const places = chercherSur2Rangees(plan, nbPlaces, placesLibres, isFrench, nbPmr)
+        const places = chercherSur2Rangees(plan, totalSlotsNeeded, placesLibres, isFrench, nbPmr)
         if (places) return places
     }
 
