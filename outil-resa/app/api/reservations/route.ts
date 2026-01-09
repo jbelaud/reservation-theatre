@@ -83,16 +83,55 @@ export async function POST(request: NextRequest) {
                 )
             }
 
-            // Vérifier que les sièges ne sont pas déjà occupés
-            const siegesOccupes = sieges.filter(s => placesOccupeesActuelles.includes(s))
+            // Récupérer la structure pour savoir lesquels sont PMR et si on doit doubler
+            let finalStructureForManual = (representation as any).structure
+            if (!finalStructureForManual) {
+                finalStructureForManual = representation.association.plansSalle[0]?.structure
+            }
+            const structurePlanForManual = parsePlanStructure(finalStructureForManual)
+
+            let placesAOccuperPhysiquement = [...sieges]
+
+            // Si PMR double est actif, on doit bloquer le voisin de chaque siège PMR choisi
+            if (structurePlanForManual.pmrDouble) {
+                const nouvellesPlaces: string[] = []
+                for (const seatId of sieges) {
+                    // Extraire rangée et numéro (ex: "A12" -> "A", 12)
+                    const match = seatId.match(/^([A-Z]+)(\d+)$/)
+                    if (match) {
+                        const rowId = match[1]
+                        const seatNum = parseInt(match[2])
+                        const row = structurePlanForManual.rangees.find(r => r.id === rowId)
+
+                        if (row && row.pmr?.includes(seatNum)) {
+                            // C'est une place PMR ! On ajoute le voisin direct
+                            // En configuration française, les sièges sont 1,3,5 ou 2,4,6 donc le voisin est à +2
+                            const step = structurePlanForManual.configuration === 'french' ? 2 : 1
+                            const neighborNum = seatNum + step
+
+                            // On vérifie que le voisin existe physiquement dans la rangée
+                            if (neighborNum <= row.sieges) {
+                                const neighborId = `${rowId}${neighborNum}`
+                                if (!nouvellesPlaces.includes(neighborId) && !sieges.includes(neighborId)) {
+                                    nouvellesPlaces.push(neighborId)
+                                }
+                            }
+                        }
+                    }
+                }
+                placesAOccuperPhysiquement = [...sieges, ...nouvellesPlaces]
+            }
+
+            // Vérifier que les sièges (y compris les voisins PMR) ne sont pas déjà occupés
+            const siegesOccupes = placesAOccuperPhysiquement.filter(s => placesOccupeesActuelles.includes(s))
             if (siegesOccupes.length > 0) {
                 return NextResponse.json(
-                    { error: `Les sièges suivants sont déjà occupés : ${siegesOccupes.join(', ')}` },
+                    { error: `Certains sièges (ou leur espace PMR nécessaire) sont déjà occupés : ${siegesOccupes.join(', ')}` },
                     { status: 400 }
                 )
             }
 
-            placesAttribuees = sieges
+            placesAttribuees = placesAOccuperPhysiquement
         } else {
             // MODE AUTOMATIQUE : Utiliser l'algorithme de placement
             // Utiliser la structure de la représentation (override) s'il y en a une,
