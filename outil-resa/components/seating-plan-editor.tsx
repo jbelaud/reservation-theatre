@@ -18,9 +18,16 @@ interface Rangee {
 interface SeatingPlanEditorProps {
     initialStructure: { rangees: Rangee[]; configuration?: string; pmrDouble?: boolean }
     onSave: (structure: { rangees: Rangee[]; configuration: string; pmrDouble: boolean }) => Promise<void>
+    showStickySave?: boolean
+    saveLabel?: string
 }
 
-export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEditorProps) {
+export function SeatingPlanEditor({
+    initialStructure,
+    onSave,
+    showStickySave = true,
+    saveLabel = 'Enregistrer la configuration'
+}: SeatingPlanEditorProps) {
     const [rangees, setRangees] = useState<Rangee[]>(initialStructure.rangees || [])
     const [configuration, setConfiguration] = useState<string>(initialStructure.configuration || 'standard')
     const [pmrDouble, setPmrDouble] = useState<boolean>(initialStructure.pmrDouble !== false)
@@ -417,6 +424,13 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                         <Plus className="mr-2 h-4 w-4" /> Ajouter une rangée
                     </Button>
 
+                    {!showStickySave && (
+                        <Button className="w-full mt-4" onClick={handleSave} disabled={loading}>
+                            <Save className="mr-2 h-4 w-4" />
+                            {loading ? 'Enregistrement...' : saveLabel}
+                        </Button>
+                    )}
+
                     <div className="pt-4 border-t mt-4">
                         <div className="flex flex-col gap-1 mb-4">
                             <div className="flex justify-between items-center">
@@ -434,23 +448,24 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                 </CardContent>
             </Card>
 
-            {/* Bouton sticky en bas */}
-            <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t shadow-lg p-4 z-50">
-                <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-                    <div className="text-sm text-gray-600">
-                        <span className="font-semibold text-blue-600">{totalPlaces}</span> places
-                        {totalPmr > 0 && (
-                            <span className="ml-2 text-purple-600">
-                                (<Accessibility className="h-3 w-3 inline-block" /> {totalPmr} PMR)
-                            </span>
-                        )}
+            {showStickySave && (
+                <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t shadow-lg p-4 z-50">
+                    <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+                        <div className="text-sm text-gray-600">
+                            <span className="font-semibold text-blue-600">{totalPlaces}</span> places
+                            {totalPmr > 0 && (
+                                <span className="ml-2 text-purple-600">
+                                    (<Accessibility className="h-3 w-3 inline-block" /> {totalPmr} PMR)
+                                </span>
+                            )}
+                        </div>
+                        <Button className="px-8" onClick={handleSave} disabled={loading}>
+                            <Save className="mr-2 h-4 w-4" />
+                            {loading ? 'Enregistrement...' : saveLabel}
+                        </Button>
                     </div>
-                    <Button className="px-8" onClick={handleSave} disabled={loading}>
-                        <Save className="mr-2 h-4 w-4" />
-                        {loading ? 'Enregistrement...' : 'Enregistrer la configuration'}
-                    </Button>
                 </div>
-            </div>
+            )}
 
             {/* Prévisualisation */}
             <Card>

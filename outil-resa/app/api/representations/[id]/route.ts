@@ -12,6 +12,7 @@ const updateRepresentationSchema = z.object({
     heure: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Heure invalide (format HH:MM)').optional(),
     capacite: z.number().int().positive('La capacité doit être supérieure à 0').optional(),
     description: z.string().optional(),
+    structure: z.string().optional(),
 })
 
 /**
@@ -132,6 +133,11 @@ export async function GET(
             include: {
                 reservations: {
                     orderBy: { createdAt: 'desc' }
+                },
+                association: {
+                    include: {
+                        plansSalle: true
+                    }
                 }
             }
         })
@@ -160,8 +166,15 @@ export async function GET(
             return { ...r, sieges }
         })
 
+        // Déterminer la structure à utiliser (override ou défaut)
+        let structure = representation.structure
+        if (!structure && representation.association.plansSalle?.[0]) {
+            structure = representation.association.plansSalle[0].structure
+        }
+
         return NextResponse.json({
             ...representation,
+            structure,
             placesOccupees: placesOccupeesArray,
             reservations: reservationsFormatted,
             placesRestantes,

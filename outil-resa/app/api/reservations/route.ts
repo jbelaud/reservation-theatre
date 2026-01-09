@@ -92,16 +92,21 @@ export async function POST(request: NextRequest) {
             placesAttribuees = sieges
         } else {
             // MODE AUTOMATIQUE : Utiliser l'algorithme de placement
-            const planSalle = representation.association.plansSalle[0]
-
-            if (!planSalle) {
-                return NextResponse.json(
-                    { error: 'Configuration de salle manquante' },
-                    { status: 500 }
-                )
+            // Utiliser la structure de la représentation (override) s'il y en a une,
+            // sinon celle du plan de salle global
+            let finalStructure = representation.structure
+            if (!finalStructure) {
+                const planSalle = representation.association.plansSalle[0]
+                if (!planSalle) {
+                    return NextResponse.json(
+                        { error: 'Configuration de salle manquante' },
+                        { status: 500 }
+                    )
+                }
+                finalStructure = planSalle.structure
             }
 
-            const structurePlan = parsePlanStructure(planSalle.structure)
+            const structurePlan = parsePlanStructure(finalStructure)
 
             const placesAuto = trouverPlaces(
                 nbPlaces,

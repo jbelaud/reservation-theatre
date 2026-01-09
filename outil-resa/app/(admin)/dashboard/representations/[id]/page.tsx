@@ -3,9 +3,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, Clock, Users, Percent } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, Users, Percent, Armchair } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { SeatingPlanEditor } from '@/components/seating-plan-editor'
+import { useToast } from '@/components/ui/use-toast'
 
 import { Button } from '@/components/ui/button'
 import { RepresentationForm } from '@/components/representation-form'
@@ -24,6 +26,7 @@ interface Representation {
     tauxRemplissage: number
     nbReservations: number
     reservations?: any[]
+    structure?: string
 }
 
 export default function RepresentationDetailPage({
@@ -36,7 +39,8 @@ export default function RepresentationDetailPage({
     const [representation, setRepresentation] = useState<Representation | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [isEditing, setIsEditing] = useState(false)
+    const [view, setView] = useState<'details' | 'edit' | 'plan'>('details')
+    const { toast } = useToast()
 
     useEffect(() => {
         params.then(({ id }) => {
@@ -96,19 +100,65 @@ export default function RepresentationDetailPage({
 
             // Rafraîchir les données
             await fetchRepresentation()
-            setIsEditing(false)
+            setView('details')
+            toast({
+                title: "Succès",
+                description: "La représentation a été mise à jour",
+            })
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Une erreur est survenue')
+            toast({
+                title: "Erreur",
+                description: error instanceof Error ? error.message : 'Une erreur est survenue',
+                variant: "destructive"
+            })
             throw error
         }
     }
 
-    const handleCancel = () => {
-        if (isEditing) {
-            setIsEditing(false)
-        } else {
-            router.push('/dashboard/representations')
+    const handleSavePlan = async (structure: any) => {
+        if (!representationId) return
+
+        try {
+            // Calculer la nouvelle capacité basée sur le plan
+            const nouvelleCapacite = structure.rangees.reduce(
+                (acc: number, row: any) => acc + (row.sieges || 0),
+                0
+            )
+
+            const response = await fetch(`/api/representations/${representationId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    structure: JSON.stringify(structure),
+                    capacite: nouvelleCapacite // On synchronise la capacité
+                }),
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.error || 'Erreur lors de la mise à jour du plan')
+            }
+
+            // Rafraîchir les données
+            await fetchRepresentation()
+            setView('details')
+            toast({
+                title: "Plan personnalisé sauvegardé",
+                description: `La capacité a été ajustée à ${nouvelleCapacite} places pour cette séance.`,
+            })
+        } catch (error) {
+            toast({
+                title: "Erreur",
+                description: error instanceof Error ? error.message : 'Une erreur est survenue',
+                variant: "destructive"
+            })
         }
+    }
+
+    const handleCancel = () => {
+        setView('details')
     }
 
     if (loading) {
@@ -135,14 +185,14 @@ export default function RepresentationDetailPage({
         <div className="p-8 max-w-5xl mx-auto">
             <Button
                 variant="ghost"
-                onClick={() => router.push('/dashboard/representations')}
+                onClick={() => view === 'details' ? router.push('/dashboard/representations') : setView('details')}
                 className="mb-6"
             >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour à la liste
+                {view === 'details' ? 'Retour à la liste' : 'Retour aux détails'}
             </Button>
 
-            {!isEditing ? (
+            {view === 'details' ? (
                 <>
                     {/* En-tête */}
                     <div className="bg-white rounded-lg border p-8 mb-6">
@@ -154,9 +204,15 @@ export default function RepresentationDetailPage({
                                     {representation.heure}
                                 </p>
                             </div>
-                            <Button onClick={() => setIsEditing(true)}>
-                                Modifier
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={() => setView('plan')}>
+                                    <Armchair className="mr-2 h-4 w-4" />
+                                    Plan de salle
+                                </Button>
+                                <Button onClick={() => setView('edit')}>
+                                    Modifier
+                                </Button>
+                            </div>
                         </div>
 
                         {representation.description && (
@@ -236,7 +292,7 @@ export default function RepresentationDetailPage({
                         />
                     </div>
                 </>
-            ) : (
+            ) : view === 'edit' ? (
                 <div className="bg-white rounded-lg border p-8">
                     <h1 className="text-3xl font-bold mb-2">Modifier la représentation</h1>
                     <p className="text-gray-600 mb-8">
@@ -254,6 +310,30 @@ export default function RepresentationDetailPage({
                         onSubmit={handleUpdate}
                         onCancel={handleCancel}
                         submitLabel="Enregistrer les modifications"
+                    />
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    <div className="bg-white rounded-lg border p-8">
+                        <h1 className="text-3xl font-bold mb-2">Plan de salle personnalisé</h1>
+                        <p className="text-gray-600 mb-4">
+                            Personnalisez le plan de salle pour cette séance spécifique.
+                            Toute modification ici affectera uniquement cette représentation.
+                        </p>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3 text-blue-800 text-sm mb-6">
+                            <Users className="h-5 w-5 shrink-0" />
+                            <p>
+                                <strong>Note :</strong> Modifier le plan de salle (ajout/suppression de rangées ou changement des PMR)
+                                mettra à jour automatiquement la capacité totale de cette séance.
+                            </p>
+                        </div>
+                    </div>
+
+                    <SeatingPlanEditor
+                        initialStructure={typeof representation.structure === 'string' ? JSON.parse(representation.structure) : representation.structure}
+                        onSave={handleSavePlan}
+                        showStickySave={false}
+                        saveLabel="Enregistrer le plan pour cette séance"
                     />
                 </div>
             )}
