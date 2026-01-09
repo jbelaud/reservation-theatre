@@ -74,7 +74,8 @@ export async function PATCH(request: NextRequest) {
             data: {
                 structure: stringifyJsonField({
                     rangees: structure.rangees,
-                    configuration: configuration
+                    configuration: configuration,
+                    pmrDouble: structure.pmrDouble
                 }),
                 capaciteTotal,
                 configuration: configuration

@@ -13,17 +13,17 @@ interface Rangee {
     id: string
     sieges: number
     pmr?: number[] // Liste des numéros de sièges PMR (ex: [1, 2, 20])
-    pmrDouble?: boolean // Si true, chaque place PMR "consomme" une place physique adjacente
 }
 
 interface SeatingPlanEditorProps {
-    initialStructure: { rangees: Rangee[]; configuration?: string }
-    onSave: (structure: { rangees: Rangee[]; configuration: string }) => Promise<void>
+    initialStructure: { rangees: Rangee[]; configuration?: string; pmrDouble?: boolean }
+    onSave: (structure: { rangees: Rangee[]; configuration: string; pmrDouble: boolean }) => Promise<void>
 }
 
 export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEditorProps) {
     const [rangees, setRangees] = useState<Rangee[]>(initialStructure.rangees || [])
     const [configuration, setConfiguration] = useState<string>(initialStructure.configuration || 'standard')
+    const [pmrDouble, setPmrDouble] = useState<boolean>(initialStructure.pmrDouble !== false)
     const [loading, setLoading] = useState(false)
 
     // États pour l'ajout rapide - VIDES PAR DÉFAUT
@@ -51,7 +51,7 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
         const nextId = String.fromCharCode(lastId.charCodeAt(0) + 1)
         const newIndex = rangees.length
 
-        setRangees([...rangees, { id: nextId, sieges: 10, pmr: [], pmrDouble: true }])
+        setRangees([...rangees, { id: nextId, sieges: 10, pmr: [] }])
         setPmrInputs(prev => ({ ...prev, [newIndex]: '' }))
     }
 
@@ -67,7 +67,7 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
 
         for (let i = 0; i < count; i++) {
             const nextId = String.fromCharCode(lastId.charCodeAt(0) + 1)
-            newRangees.push({ id: nextId, sieges: seats, pmr: [], pmrDouble: true })
+            newRangees.push({ id: nextId, sieges: seats, pmr: [] })
             lastId = nextId
         }
 
@@ -139,7 +139,7 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
         const delta = newPmrCount - oldPmrCount
 
         const newRangees = [...rangees]
-        if (delta !== 0 && newRangees[index].pmrDouble !== false) {
+        if (delta !== 0 && pmrDouble) {
             const newSeatCount = Math.max(1, newRangees[index].sieges - delta)
             newRangees[index].sieges = newSeatCount
         }
@@ -157,25 +157,25 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
         setRangees(newRangees)
     }
 
-    const handleTogglePmrDouble = (index: number) => {
-        const newRangees = [...rangees]
-        const rangee = newRangees[index]
-        const wasDouble = rangee.pmrDouble !== false
-        const isDouble = !wasDouble
+    const handleTogglePmrDouble = () => {
+        const newValue = !pmrDouble
+        setPmrDouble(newValue)
 
-        rangee.pmrDouble = isDouble
+        // Ajuster TOUTES les rangées
+        const newRangees = rangees.map(rangee => {
+            const pmrCount = rangee.pmr?.length || 0
+            if (pmrCount === 0) return rangee
 
-        // Ajuster le nombre de sièges si on change le mode alors qu'il y a déjà des PMR
-        const pmrCount = rangee.pmr?.length || 0
-        if (pmrCount > 0) {
-            if (isDouble) {
-                // On passe à "X PMR prend 2 places" : on enlève X places physiques
-                rangee.sieges = Math.max(1, rangee.sieges - pmrCount)
+            const newRangee = { ...rangee }
+            if (newValue) {
+                // On active "PMR prend 2 places" : on réduit le nombre de sièges
+                newRangee.sieges = Math.max(1, newRangee.sieges - pmrCount)
             } else {
-                // On passe à "X PMR prend 1 place" : on rajoute X places physiques libérées
-                rangee.sieges = rangee.sieges + pmrCount
+                // On désactive : on rajoute les places libérées
+                newRangee.sieges = newRangee.sieges + pmrCount
             }
-        }
+            return newRangee
+        })
 
         setRangees(newRangees)
     }
@@ -183,7 +183,7 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
     const handleSave = async () => {
         setLoading(true)
         try {
-            await onSave({ rangees, configuration })
+            await onSave({ rangees, configuration, pmrDouble })
         } finally {
             setLoading(false)
         }
@@ -239,6 +239,21 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                                     ? "Numérotation française : impairs à gauche (9, 7, 5...), pairs à droite (2, 4, 6...)"
                                     : "Numérotation standard : de gauche à droite (1, 2, 3, 4...)"}
                             </p>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                            <div className="flex items-center gap-2">
+                                <Accessibility className="h-4 w-4 text-purple-600" />
+                                <Label htmlFor="global-pmr-double" className="text-sm font-medium text-purple-900 cursor-pointer">
+                                    PMR prend 2 places par défaut
+                                </Label>
+                            </div>
+                            <input
+                                type="checkbox"
+                                id="global-pmr-double"
+                                checked={pmrDouble}
+                                onChange={handleTogglePmrDouble}
+                                className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
                         </div>
                     </div>
 
@@ -378,21 +393,6 @@ export function SeatingPlanEditor({ initialStructure, onSave }: SeatingPlanEdito
                                                             placeholder="Ex: 1,2 ou 5-12"
                                                             className="bg-white text-sm"
                                                         />
-                                                    </div>
-                                                    <div className="flex items-center gap-2 pt-1">
-                                                        <input
-                                                            type="checkbox"
-                                                            id={`pmr-double-${index}`}
-                                                            checked={rangee.pmrDouble !== false}
-                                                            onChange={() => handleTogglePmrDouble(index)}
-                                                            className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                                        />
-                                                        <Label
-                                                            htmlFor={`pmr-double-${index}`}
-                                                            className="text-xs text-gray-600 cursor-pointer"
-                                                        >
-                                                            PMR prend 2 places
-                                                        </Label>
                                                     </div>
                                                 </div>
                                                 <div className="pt-5">

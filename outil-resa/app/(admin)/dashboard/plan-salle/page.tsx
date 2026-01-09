@@ -5,14 +5,14 @@ import { SeatingPlanEditor } from '@/components/seating-plan-editor'
 import { useToast } from '@/components/ui/use-toast'
 
 // Helper pour parser la structure (compatibilité SQLite/PostgreSQL)
-const parsePlanStructure = (structure: unknown): { rangees: any[]; configuration?: string } => {
+const parsePlanStructure = (structure: unknown): { rangees: any[]; configuration?: string; pmrDouble?: boolean } => {
     if (typeof structure === 'object' && structure !== null) {
         return structure as any
     }
     if (typeof structure === 'string') {
-        try { return JSON.parse(structure) } catch { return { rangees: [], configuration: 'standard' } }
+        try { return JSON.parse(structure) } catch { return { rangees: [], configuration: 'standard', pmrDouble: true } }
     }
-    return { rangees: [], configuration: 'standard' }
+    return { rangees: [], configuration: 'standard', pmrDouble: true }
 }
 
 export default function PlanSallePage() {
@@ -41,7 +41,8 @@ export default function PlanSallePage() {
                 body: JSON.stringify({
                     structure: {
                         rangees: structure.rangees,
-                        configuration: structure.configuration
+                        configuration: structure.configuration,
+                        pmrDouble: structure.pmrDouble
                     }
                 })
             })
