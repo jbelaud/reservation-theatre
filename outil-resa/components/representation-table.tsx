@@ -22,6 +22,7 @@ interface Representation {
     date: string | Date
     heure: string
     capacite: number
+    capaciteVente?: number
     placesRestantes?: number
     tauxRemplissage?: number
 }
@@ -98,7 +99,7 @@ export function RepresentationTable({
                                         {rep.heure}
                                     </div>
                                 </TableCell>
-                                <TableCell className="font-medium">{rep.capacite}</TableCell>
+                                <TableCell className="font-medium">{rep.capaciteVente ?? rep.capacite}</TableCell>
                                 <TableCell>
                                     <span className={isComplet ? 'text-red-600 font-semibold' : 'font-medium'}>
                                         {placesRestantes}
