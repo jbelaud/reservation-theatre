@@ -44,7 +44,7 @@ export default function RepresentationsPage() {
     const [error, setError] = useState<string | null>(null)
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [deleting, setDeleting] = useState(false)
-    const [selectedYear, setSelectedYear] = useState<string>('all')
+    const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
 
     // Calculer les années disponibles
     const years = Array.from(
