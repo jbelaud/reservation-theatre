@@ -89,14 +89,26 @@ export async function GET(request: NextRequest) {
                 placesOccupeesArray = rep.placesOccupees
             }
 
-            const placesRestantes = rep.capacite - placesOccupeesArray.length
+            // Parse les places PMR
+            let placesPmrArray: string[] = []
+            if (typeof rep.placesPmr === 'string') {
+                try { placesPmrArray = JSON.parse(rep.placesPmr) } catch { }
+            } else if (Array.isArray(rep.placesPmr)) {
+                placesPmrArray = rep.placesPmr
+            }
+
+            // Calculer le nombre de tickets vendus (pas le nombre de places physiques occupées)
+            // Si un siège PMR occupe 2 places physiques, on ne compte qu'1 ticket
+            const ticketsVendus = placesOccupeesArray.length - placesPmrArray.length
+
+            const placesRestantes = rep.capacite - ticketsVendus
 
             return {
                 ...rep,
-                placesOccupees: placesOccupeesArray, // Retourner comme array
+                placesOccupees: placesOccupeesArray,
                 nbReservations: rep._count.reservations,
                 placesRestantes,
-                tauxRemplissage: Math.round((placesOccupeesArray.length / rep.capacite) * 100),
+                tauxRemplissage: Math.round((ticketsVendus / rep.capacite) * 100),
             }
         })
 
