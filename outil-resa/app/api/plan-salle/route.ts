@@ -59,16 +59,13 @@ export async function PATCH(request: NextRequest) {
             )
         }
 
-        // Calculer nouvelle capacité de vente (tickets)
-        const physical = structure.rangees.reduce(
+        // Calculer la capacité totale (nombre de places physiques)
+        // La capacité de vente sera calculée dynamiquement par représentation
+        // en fonction du nombre de sièges PMR réservés
+        const capaciteTotal = structure.rangees.reduce(
             (acc: number, row: { sieges: number }) => acc + (row.sieges || 0),
             0
         )
-        const pmrCount = structure.rangees.reduce(
-            (acc: number, row: any) => acc + (row.pmr?.length || 0),
-            0
-        )
-        const capaciteTotal = structure.pmrDouble ? physical - pmrCount : physical
 
         // S'assurer que la configuration est définie
         const configuration = structure.configuration || 'standard'

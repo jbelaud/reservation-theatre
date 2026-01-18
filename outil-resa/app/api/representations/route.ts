@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 
         // Calcul des places restantes pour chaque représentation
         const representationsWithStats = representations.map((rep: any) => {
-            // Parse les places occupées (String JSON en SQLite)
+            // Parse les places occupées (String JSON)
             let placesOccupeesArray: string[] = []
             if (typeof rep.placesOccupees === 'string') {
                 try { placesOccupeesArray = JSON.parse(rep.placesOccupees) } catch { }
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
                 placesOccupeesArray = rep.placesOccupees
             }
 
-            // Parse les places PMR
+            // Parse les places PMR réservées
             let placesPmrArray: string[] = []
             if (typeof rep.placesPmr === 'string') {
                 try { placesPmrArray = JSON.parse(rep.placesPmr) } catch { }
@@ -97,18 +97,27 @@ export async function GET(request: NextRequest) {
                 placesPmrArray = rep.placesPmr
             }
 
-            // Calculer le nombre de tickets vendus (pas le nombre de places physiques occupées)
-            // Si un siège PMR occupe 2 places physiques, on ne compte qu'1 ticket
-            const ticketsVendus = placesOccupeesArray.length - placesPmrArray.length
+            // Logique de capacité dynamique :
+            // - Capacité de base = rep.capacite (ex: 216 places physiques)
+            // - Si 1 siège PMR réservé : capacité vente = 216 - 1 = 215 tickets
+            // - Si 3 sièges PMR réservés : capacité vente = 216 - 3 = 213 tickets
+            // Car chaque siège PMR prend 2 places physiques mais compte pour 1 ticket
+            const nbPmrReserves = placesPmrArray.length
+            const capaciteVente = rep.capacite - nbPmrReserves
 
-            const placesRestantes = rep.capacite - ticketsVendus
+            // Calculer le nombre de tickets vendus
+            // = places occupées - places PMR (car PMR prend 2 places physiques)
+            const ticketsVendus = placesOccupeesArray.length - nbPmrReserves
+
+            const placesRestantes = capaciteVente - ticketsVendus
 
             return {
                 ...rep,
                 placesOccupees: placesOccupeesArray,
                 nbReservations: rep._count.reservations,
                 placesRestantes,
-                tauxRemplissage: Math.round((ticketsVendus / rep.capacite) * 100),
+                capaciteVente, // Capacité dynamique pour cette représentation
+                tauxRemplissage: capaciteVente > 0 ? Math.round((ticketsVendus / capaciteVente) * 100) : 0,
             }
         })
 

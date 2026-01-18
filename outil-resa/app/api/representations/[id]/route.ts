@@ -151,11 +151,24 @@ export async function GET(
 
         const placesOccupeesArray = parsePlacesOccupees(representation.placesOccupees)
 
-        // Calculer les places restances par rapport aux TICkETS et non aux SIÈGES PHYSIQUES
+        // Parse les places PMR réservées
+        let placesPmrArray: string[] = []
+        if (typeof representation.placesPmr === 'string') {
+            try { placesPmrArray = JSON.parse(representation.placesPmr) } catch { }
+        } else if (Array.isArray(representation.placesPmr)) {
+            placesPmrArray = representation.placesPmr
+        }
+
+        // Calculer la capacité dynamique
+        // Capacité de base - nb PMR réservés (car chaque PMR prend 2 places physiques)
+        const nbPmrReserves = placesPmrArray.length
+        const capaciteVente = representation.capacite - nbPmrReserves
+
+        // Calculer les tickets vendus par rapport aux réservations
         const totalTicketsSold = representation.reservations.reduce((acc: number, r: any) => acc + (r.nbPlaces || 0), 0)
-        const placesRestantes = representation.capacite - totalTicketsSold
+        const placesRestantes = capaciteVente - totalTicketsSold
         const nbReservations = representation.reservations.length
-        const tauxRemplissage = Math.round((totalTicketsSold / representation.capacite) * 100)
+        const tauxRemplissage = capaciteVente > 0 ? Math.round((totalTicketsSold / capaciteVente) * 100) : 0
 
         // Parser les sièges de chaque réservation (String JSON en SQLite)
         const reservationsFormatted = representation.reservations.map((r: any) => {
