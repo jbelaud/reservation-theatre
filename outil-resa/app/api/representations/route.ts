@@ -117,6 +117,7 @@ export async function GET(request: NextRequest) {
                 nbReservations: rep._count.reservations,
                 placesRestantes,
                 capaciteVente, // Capacité dynamique pour cette représentation
+                nbPmr: nbPmrReserves, // Nombre de sièges PMR réservés
                 tauxRemplissage: capaciteVente > 0 ? Math.round((ticketsVendus / capaciteVente) * 100) : 0,
             }
         })

@@ -25,6 +25,7 @@ interface Representation {
     capaciteVente?: number
     placesRestantes?: number
     tauxRemplissage?: number
+    nbPmr?: number
 }
 
 interface RepresentationTableProps {
@@ -61,6 +62,7 @@ export function RepresentationTable({
                         <TableHead>Date</TableHead>
                         <TableHead>Heure</TableHead>
                         <TableHead>Capacité</TableHead>
+                        <TableHead className="text-center">PMR</TableHead>
                         <TableHead>Places restantes</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -100,6 +102,15 @@ export function RepresentationTable({
                                     </div>
                                 </TableCell>
                                 <TableCell className="font-medium">{rep.capaciteVente ?? rep.capacite}</TableCell>
+                                <TableCell className="text-center">
+                                    {rep.nbPmr !== undefined && rep.nbPmr > 0 ? (
+                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                            {rep.nbPmr}
+                                        </Badge>
+                                    ) : (
+                                        <span className="text-gray-400">-</span>
+                                    )}
+                                </TableCell>
                                 <TableCell>
                                     <span className={isComplet ? 'text-red-600 font-semibold' : 'font-medium'}>
                                         {placesRestantes}
