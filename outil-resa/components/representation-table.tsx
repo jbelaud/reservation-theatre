@@ -64,6 +64,7 @@ export function RepresentationTable({
                         <TableHead>Heure</TableHead>
                         <TableHead>Capacité</TableHead>
                         <TableHead className="text-center">PMR</TableHead>
+                        <TableHead>Places réservées</TableHead>
                         <TableHead>Places restantes</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -72,6 +73,8 @@ export function RepresentationTable({
                 <TableBody>
                     {representations.map((rep) => {
                         const placesRestantes = rep.placesRestantes ?? rep.capacite
+                        const capaciteVente = rep.capaciteVente ?? rep.capacite
+                        const placesReservees = capaciteVente - placesRestantes
                         const tauxRemplissage = rep.tauxRemplissage ?? 0
                         const isComplet = placesRestantes === 0
                         const isPastDate = isPast(new Date(rep.date))
@@ -116,6 +119,11 @@ export function RepresentationTable({
                                     ) : (
                                         <span className="text-gray-400">-</span>
                                     )}
+                                </TableCell>
+                                <TableCell>
+                                    <span className="font-medium text-blue-600">
+                                        {placesReservees}
+                                    </span>
                                 </TableCell>
                                 <TableCell>
                                     <span className={isComplet ? 'text-red-600 font-semibold' : 'font-medium'}>
