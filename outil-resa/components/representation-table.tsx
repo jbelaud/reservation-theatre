@@ -25,7 +25,8 @@ interface Representation {
     capaciteVente?: number
     placesRestantes?: number
     tauxRemplissage?: number
-    nbPmr?: number
+    nbPmrReserves?: number
+    nbPmrTotal?: number
 }
 
 interface RepresentationTableProps {
@@ -103,9 +104,14 @@ export function RepresentationTable({
                                 </TableCell>
                                 <TableCell className="font-medium">{rep.capaciteVente ?? rep.capacite}</TableCell>
                                 <TableCell className="text-center">
-                                    {rep.nbPmr !== undefined && rep.nbPmr > 0 ? (
-                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                            {rep.nbPmr}
+                                    {rep.nbPmrTotal !== undefined && rep.nbPmrTotal > 0 ? (
+                                        <Badge 
+                                            variant="outline" 
+                                            className={rep.nbPmrReserves === rep.nbPmrTotal 
+                                                ? "bg-red-50 text-red-700 border-red-200" 
+                                                : "bg-blue-50 text-blue-700 border-blue-200"}
+                                        >
+                                            {rep.nbPmrReserves ?? 0}/{rep.nbPmrTotal}
                                         </Badge>
                                     ) : (
                                         <span className="text-gray-400">-</span>

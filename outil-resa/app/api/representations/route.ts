@@ -68,6 +68,24 @@ export async function GET(request: NextRequest) {
         // Authentification
         const associationId = await getAuthenticatedAssociation(request)
 
+        // Récupérer le plan de salle pour connaître le nombre total de sièges PMR
+        const planSalle = await prisma.planSalle.findUnique({
+            where: { associationId }
+        })
+
+        let nbPmrTotal = 0
+        if (planSalle) {
+            try {
+                const structure = JSON.parse(planSalle.structure)
+                nbPmrTotal = structure.rangees.reduce(
+                    (acc: number, row: any) => acc + (row.pmr?.length || 0),
+                    0
+                )
+            } catch (e) {
+                // Si erreur de parsing, on laisse à 0
+            }
+        }
+
         // Récupération des représentations avec statistiques
         const representations = await prisma.representation.findMany({
             where: { associationId },
@@ -117,7 +135,8 @@ export async function GET(request: NextRequest) {
                 nbReservations: rep._count.reservations,
                 placesRestantes,
                 capaciteVente, // Capacité dynamique pour cette représentation
-                nbPmr: nbPmrReserves, // Nombre de sièges PMR réservés
+                nbPmrReserves, // Nombre de sièges PMR réservés
+                nbPmrTotal, // Nombre total de sièges PMR disponibles dans le plan de salle
                 tauxRemplissage: capaciteVente > 0 ? Math.round((ticketsVendus / capaciteVente) * 100) : 0,
             }
         })
