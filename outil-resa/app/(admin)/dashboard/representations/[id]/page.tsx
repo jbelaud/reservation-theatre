@@ -337,7 +337,11 @@ export default function RepresentationDetailPage({
                     </div>
 
                     <SeatingPlanEditor
-                        initialStructure={typeof representation.structure === 'string' ? JSON.parse(representation.structure) : representation.structure}
+                        initialStructure={
+                            representation.structure 
+                                ? (typeof representation.structure === 'string' ? JSON.parse(representation.structure) : representation.structure)
+                                : { rangees: [], configuration: 'standard', pmrDouble: true }
+                        }
                         onSave={handleSavePlan}
                         showStickySave={false}
                         saveLabel="Enregistrer le plan pour cette séance"
