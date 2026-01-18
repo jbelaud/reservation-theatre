@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Accessibility } from 'lucide-react'
 
 interface Rangee {
     id: string
     sieges: number
+    pmr?: number[]
 }
 
 interface SeatingPlanSelectorProps {
@@ -16,7 +17,7 @@ interface SeatingPlanSelectorProps {
 
 export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelected }: SeatingPlanSelectorProps) {
     const [loading, setLoading] = useState(true)
-    const [planStructure, setPlanStructure] = useState<{ rangees: Rangee[]; configuration?: string } | null>(null)
+    const [planStructure, setPlanStructure] = useState<{ rangees: Rangee[]; configuration?: string; pmrDouble?: boolean } | null>(null)
     const [occupiedSeats, setOccupiedSeats] = useState<string[]>([])
     const [selectedSeats, setSelectedSeats] = useState<string[]>([])
 
@@ -48,7 +49,8 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
 
             setPlanStructure({
                 rangees: structure?.rangees || [],
-                configuration: structure?.configuration || planData.configuration || 'standard'
+                configuration: structure?.configuration || planData.configuration || 'standard',
+                pmrDouble: structure?.pmrDouble || false
             })
 
             // Récupérer la représentation pour les places occupées
@@ -74,8 +76,8 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
     }
 
     // Générer les IDs de sièges selon la configuration
-    const generateSeatIds = (rangeeId: string, totalSeats: number, configuration: string) => {
-        const seats: Array<{ id: string; num: number | string; isAisle?: boolean }> = []
+    const generateSeatIds = (rangeeId: string, totalSeats: number, configuration: string, pmrSeats?: number[]) => {
+        const seats: Array<{ id: string; num: number | string; isAisle?: boolean; isPmr?: boolean }> = []
 
         if (configuration === 'french') {
             // Numérotation française : impairs à gauche, pairs à droite
@@ -94,7 +96,7 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
 
             // Ajouter les impairs
             odds.forEach(num => {
-                seats.push({ id: `${rangeeId}${num}`, num })
+                seats.push({ id: `${rangeeId}${num}`, num, isPmr: pmrSeats?.includes(num) })
             })
 
             // Allée centrale
@@ -102,12 +104,12 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
 
             // Ajouter les pairs
             evens.forEach(num => {
-                seats.push({ id: `${rangeeId}${num}`, num })
+                seats.push({ id: `${rangeeId}${num}`, num, isPmr: pmrSeats?.includes(num) })
             })
         } else {
             // Numérotation standard : 1, 2, 3, 4...
             for (let i = 1; i <= totalSeats; i++) {
-                seats.push({ id: `${rangeeId}${i}`, num: i })
+                seats.push({ id: `${rangeeId}${i}`, num: i, isPmr: pmrSeats?.includes(i) })
             }
         }
 
@@ -128,15 +130,17 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
         }
     }
 
-    const getSeatColor = (seatId: string) => {
+    const getSeatColor = (seatId: string, isPmr?: boolean) => {
         if (selectedSeats.includes(seatId)) return 'bg-blue-500 hover:bg-blue-600'
         if (occupiedSeats.includes(seatId)) return 'bg-red-500 cursor-not-allowed opacity-60'
+        if (isPmr) return 'bg-purple-500 hover:bg-purple-600 cursor-pointer'
         return 'bg-green-500 hover:bg-green-600 cursor-pointer'
     }
 
-    const getSeatTitle = (seatId: string) => {
+    const getSeatTitle = (seatId: string, isPmr?: boolean) => {
         if (selectedSeats.includes(seatId)) return `${seatId} - Sélectionné (cliquez pour annuler)`
         if (occupiedSeats.includes(seatId)) return `${seatId} - Occupé`
+        if (isPmr) return `${seatId} - Place PMR (cliquez pour sélectionner)`
         return `${seatId} - Libre (cliquez pour sélectionner)`
     }
 
@@ -166,6 +170,10 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
                 <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-green-500 rounded"></div>
                     <span>Libre</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                    <span>PMR</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-red-500 rounded"></div>
@@ -198,10 +206,10 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
                 <div className="space-y-2">
                     {(!planStructure.rangees || planStructure.rangees.length === 0) ? (
                         <div className="text-center text-gray-400 py-8">
-                            Aucune rangée configurée. Veuillez d'abord configurer le plan de salle.
+                            Aucune rangée configurée. Veuillez d&apos;abord configurer le plan de salle.
                         </div>
                     ) : planStructure.rangees.map((rangee) => {
-                        const seats = generateSeatIds(rangee.id, rangee.sieges, configuration)
+                        const seats = generateSeatIds(rangee.id, rangee.sieges, configuration, rangee.pmr)
 
                         return (
                             <div key={rangee.id} className="flex items-center justify-center gap-2">
@@ -227,11 +235,14 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
                                                 key={i}
                                                 type="button"
                                                 onClick={() => handleSeatClick(seat.id)}
-                                                className={`w-7 h-7 rounded-t-md transition-all text-[10px] font-bold text-white flex items-center justify-center ${getSeatColor(seat.id)}`}
-                                                title={getSeatTitle(seat.id)}
+                                                className={`w-7 h-7 rounded-t-md transition-all text-[10px] font-bold text-white flex items-center justify-center relative ${getSeatColor(seat.id, seat.isPmr)}`}
+                                                title={getSeatTitle(seat.id, seat.isPmr)}
                                                 disabled={occupiedSeats.includes(seat.id)}
                                             >
                                                 {seat.num}
+                                                {seat.isPmr && (
+                                                    <Accessibility className="absolute -top-1 -right-1 h-3 w-3 text-white" />
+                                                )}
                                             </button>
                                         )
                                     })}
