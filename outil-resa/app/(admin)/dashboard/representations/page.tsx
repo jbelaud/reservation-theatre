@@ -3,8 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Users } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
@@ -25,6 +24,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { CreateRepresentationDialog } from '@/components/create-representation-dialog'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface Representation {
     id: string
@@ -32,6 +32,7 @@ interface Representation {
     date: string
     heure: string
     capacite: number
+    capaciteVente?: number
     placesRestantes: number
     tauxRemplissage: number
 }
@@ -57,6 +58,13 @@ export default function RepresentationsPage() {
         if (selectedYear === 'all') return true
         return new Date(rep.date).getFullYear().toString() === selectedYear
     })
+
+    // Calculer le total des places réservées pour les représentations filtrées
+    const totalPlacesReservees = filteredRepresentations.reduce((total, rep) => {
+        const capaciteVente = rep.capaciteVente ?? rep.capacite
+        const placesReservees = capaciteVente - rep.placesRestantes
+        return total + placesReservees
+    }, 0)
 
     // Charger les représentations
     useEffect(() => {
@@ -173,6 +181,22 @@ export default function RepresentationsPage() {
                     <CreateRepresentationDialog onSuccess={fetchRepresentations} />
                 </div>
             </div>
+
+            {/* KPI - Total des places réservées */}
+            <Card className="mb-6">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                        Places réservées {selectedYear !== 'all' ? `en ${selectedYear}` : 'au total'}
+                    </CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{totalPlacesReservees.toLocaleString('fr-FR')}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                        Sur {filteredRepresentations.length} représentation{filteredRepresentations.length > 1 ? 's' : ''}
+                    </p>
+                </CardContent>
+            </Card>
 
             <RepresentationTable
                 representations={filteredRepresentations}
