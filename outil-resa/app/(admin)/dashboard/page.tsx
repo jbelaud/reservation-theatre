@@ -436,9 +436,9 @@ function LicenceStatus({ active, expireDate }: { active: boolean, expireDate?: s
 function RibModal() {
     const rib = {
         titulaire: "ETS BELAUD",
-        banque: "Banque Populaire",
-        iban: "FR76 1234 5678 9012 3456 7890 123",
-        bic: "BPOPFRPP"
+        banque: "Qonto",
+        iban: "FR76 1695 8000 0133 5320 8298 301",
+        bic: "QNTOFRP1XXX"
     }
 
     return (
