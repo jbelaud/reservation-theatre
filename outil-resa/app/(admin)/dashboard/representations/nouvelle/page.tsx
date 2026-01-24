@@ -44,7 +44,7 @@ export default function NouvelleRepresentationPage() {
     }
 
     return (
-        <div className="p-8 max-w-3xl mx-auto">
+        <div className="p-8 max-w-[1600px] mx-auto">
             <Button
                 variant="ghost"
                 onClick={handleCancel}

@@ -36,11 +36,11 @@ interface ShowWithReservations {
 
 async function getDashboardData(associationId: string) {
     const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const startOfYear = new Date(now.getFullYear(), 0, 1)
+    const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59)
 
     // ⚡ OPTIMISATION: Exécuter toutes les requêtes en parallèle
-    const [association, upcomingShows, showsThisMonth, reservationsThisMonth, activeShows] = await Promise.all([
+    const [association, upcomingShows, showsThisYear, reservationsThisYear, activeShows, allRepresentations] = await Promise.all([
         // 1. Récupérer l'association
         prisma.association.findUnique({
             where: { id: associationId },
@@ -66,53 +66,113 @@ async function getDashboardData(associationId: string) {
             }
         }),
 
-        // 3. Stats: Représentations ce mois-ci
+        // 3. Stats: Représentations cette année
         prisma.representation.count({
             where: {
                 associationId,
                 date: {
-                    gte: startOfMonth,
-                    lte: endOfMonth
+                    gte: startOfYear,
+                    lte: endOfYear
                 }
             }
         }),
 
-        // 4. Stats: Réservations ce mois-ci (créées ce mois-ci)
+        // 4. Stats: Réservations cette année
         prisma.reservation.aggregate({
             where: {
-                representation: { associationId },
-                createdAt: {
-                    gte: startOfMonth,
-                    lte: endOfMonth
+                representation: { 
+                    associationId,
+                    date: {
+                        gte: startOfYear,
+                        lte: endOfYear
+                    }
                 }
             },
             _sum: { nbPlaces: true }
         }),
 
-        // 5. Stats: Taux de remplissage moyen (sur les représentations à venir)
+        // 5. Stats: Taux de remplissage moyen (sur les représentations de cette année)
         prisma.representation.findMany({
-            where: { associationId, date: { gte: now } },
+            where: { 
+                associationId, 
+                date: { 
+                    gte: startOfYear,
+                    lte: endOfYear
+                } 
+            },
             include: { reservations: { select: { nbPlaces: true } } }
+        }),
+
+        // 6. Toutes les représentations pour l'historique
+        prisma.representation.findMany({
+            where: { associationId },
+            orderBy: { date: 'desc' },
+            include: {
+                reservations: {
+                    select: { nbPlaces: true }
+                }
+            }
         })
     ])
 
     let totalFillRate = 0
     let showsWithCapacity = 0
 
-        ; (activeShows as ShowWithReservations[]).forEach((show) => {
-            if (show.capacite > 0) {
-                const reserved = show.reservations.reduce((acc, r) => acc + r.nbPlaces, 0)
-                totalFillRate += (reserved / show.capacite) * 100
-                showsWithCapacity++
-            }
-        })
+    ;(activeShows as ShowWithReservations[]).forEach((show) => {
+        if (show.capacite > 0) {
+            const reserved = show.reservations.reduce((acc, r) => acc + r.nbPlaces, 0)
+            totalFillRate += (reserved / show.capacite) * 100
+            showsWithCapacity++
+        }
+    })
 
     const averageFillRate = showsWithCapacity > 0 ? Math.round(totalFillRate / showsWithCapacity) : 0
+
+    // Grouper les représentations par année pour l'historique
+    const yearlyHistory: Record<number, {
+        year: number
+        showTitle: string
+        representations: number
+        totalTickets: number
+        totalCapacity: number
+        fillRate: number
+    }> = {}
+
+    ;(allRepresentations as ShowWithReservations[]).forEach((show) => {
+        const year = show.date.getFullYear()
+        if (!yearlyHistory[year]) {
+            yearlyHistory[year] = {
+                year,
+                showTitle: show.titre,
+                representations: 0,
+                totalTickets: 0,
+                totalCapacity: 0,
+                fillRate: 0
+            }
+        }
+        yearlyHistory[year].representations++
+        yearlyHistory[year].totalTickets += show.reservations.reduce((acc, r) => acc + r.nbPlaces, 0)
+        yearlyHistory[year].totalCapacity += show.capacite
+        // Garder le titre de la première représentation de l'année (la plus récente car tri desc)
+        if (yearlyHistory[year].representations === 1) {
+            yearlyHistory[year].showTitle = show.titre
+        }
+    })
+
+    // Calculer le taux de remplissage pour chaque année
+    Object.values(yearlyHistory).forEach((yearData) => {
+        yearData.fillRate = yearData.totalCapacity > 0 
+            ? Math.round((yearData.totalTickets / yearData.totalCapacity) * 100) 
+            : 0
+    })
+
+    const sortedHistory = Object.values(yearlyHistory).sort((a, b) => b.year - a.year)
 
     return {
         associationName: association?.nom || 'Théâtre',
         licenceActive: association?.licenceActive ?? false,
         licenceExpire: association?.licenceExpire,
+        currentYear: now.getFullYear(),
         upcomingShows: (upcomingShows as ShowWithReservations[]).map((show) => {
             const reserved = show.reservations.reduce((acc, r) => acc + r.nbPlaces, 0)
             const fillRate = show.capacite > 0 ? Math.round((reserved / show.capacite) * 100) : 0
@@ -128,10 +188,11 @@ async function getDashboardData(associationId: string) {
             }
         }),
         stats: {
-            showsThisMonth,
-            reservationsThisMonth: reservationsThisMonth._sum.nbPlaces || 0,
+            showsThisYear,
+            reservationsThisYear: reservationsThisYear._sum.nbPlaces || 0,
             fillRate: averageFillRate
-        }
+        },
+        yearlyHistory: sortedHistory
     }
 }
 
@@ -164,16 +225,16 @@ export default async function DashboardPage() {
             </div>
 
             <div className="max-w-[1600px] mx-auto px-8 space-y-8">
-                {/* Stats */}
+                {/* Stats de l'année en cours */}
                 <div className="grid gap-6 md:grid-cols-3">
                     <StatCard
-                        title="Représentations ce mois"
-                        value={data.stats.showsThisMonth}
+                        title={`Représentations en ${data.currentYear}`}
+                        value={data.stats.showsThisYear}
                         icon={Calendar}
                     />
                     <StatCard
-                        title="Billets réservés"
-                        value={data.stats.reservationsThisMonth}
+                        title={`Billets réservés en ${data.currentYear}`}
+                        value={data.stats.reservationsThisYear}
                         icon={Users}
                     />
                     <StatCard
@@ -245,6 +306,72 @@ export default async function DashboardPage() {
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Historique par année */}
+                {data.yearlyHistory.length > 0 && (
+                    <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden bg-white">
+                        <CardHeader className="px-6 py-4 bg-white border-b border-gray-100">
+                            <CardTitle className="text-lg font-bold text-gray-900">Historique des spectacles</CardTitle>
+                            <p className="text-sm text-gray-500 mt-1">Récapitulatif année par année</p>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <div className="space-y-4">
+                                {data.yearlyHistory.map((yearData) => (
+                                    <div 
+                                        key={yearData.year} 
+                                        className={`p-4 rounded-xl border ${
+                                            yearData.year === data.currentYear 
+                                                ? 'bg-blue-50 border-blue-200' 
+                                                : 'bg-gray-50 border-gray-200'
+                                        }`}
+                                    >
+                                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`text-2xl font-bold ${
+                                                    yearData.year === data.currentYear 
+                                                        ? 'text-blue-600' 
+                                                        : 'text-gray-700'
+                                                }`}>
+                                                    {yearData.year}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">{yearData.showTitle}</p>
+                                                    <p className="text-sm text-gray-500">
+                                                        {yearData.representations} représentation{yearData.representations > 1 ? 's' : ''}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-6">
+                                                <div className="text-center">
+                                                    <p className="text-2xl font-bold text-gray-900">{yearData.totalTickets.toLocaleString('fr-FR')}</p>
+                                                    <p className="text-xs text-gray-500">billets vendus</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-2xl font-bold text-gray-900">{yearData.totalCapacity.toLocaleString('fr-FR')}</p>
+                                                    <p className="text-xs text-gray-500">capacité totale</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <Badge 
+                                                        variant="secondary" 
+                                                        className={`text-sm px-3 py-1 ${
+                                                            yearData.fillRate >= 80 
+                                                                ? 'bg-green-100 text-green-700' 
+                                                                : yearData.fillRate >= 50 
+                                                                    ? 'bg-orange-100 text-orange-700' 
+                                                                    : 'bg-gray-100 text-gray-700'
+                                                        }`}
+                                                    >
+                                                        {yearData.fillRate}% rempli
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     )

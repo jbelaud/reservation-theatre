@@ -90,6 +90,9 @@ export async function GET(request: NextRequest) {
         const representations = await prisma.representation.findMany({
             where: { associationId },
             include: {
+                reservations: {
+                    select: { nbPlaces: true }
+                },
                 _count: {
                     select: { reservations: true },
                 },

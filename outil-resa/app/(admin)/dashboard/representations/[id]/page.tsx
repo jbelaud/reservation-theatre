@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { RepresentationForm } from '@/components/representation-form'
 import { ReservationList } from '@/components/reservation-list'
 import { ManualReservationModal } from '@/components/manual-reservation-modal'
+import { SeatingPlanViewer } from '@/components/seating-plan-viewer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface Representation {
@@ -40,6 +41,7 @@ export default function RepresentationDetailPage({
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [view, setView] = useState<'details' | 'edit' | 'plan'>('details')
+    const [refreshTrigger, setRefreshTrigger] = useState(0)
     const { toast } = useToast()
 
     useEffect(() => {
@@ -183,7 +185,7 @@ export default function RepresentationDetailPage({
     }
 
     return (
-        <div className="p-8 max-w-5xl mx-auto">
+        <div className="p-8 max-w-[1600px] mx-auto">
             <Button
                 variant="ghost"
                 onClick={() => view === 'details' ? router.push('/dashboard/representations') : setView('details')}
@@ -278,19 +280,44 @@ export default function RepresentationDetailPage({
                         </div>
                     </div>
 
-                    {/* Section réservations */}
-                    <div className="bg-white rounded-lg border p-8">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">Réservations</h2>
-                            <ManualReservationModal
-                                representationId={representation.id}
-                                onSuccess={fetchRepresentation}
-                            />
+                    {/* Layout 2/3 réservations + 1/3 plan de salle */}
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        {/* Section réservations - 2/3 */}
+                        <div className="lg:col-span-2">
+                            <div className="bg-white rounded-lg border p-8">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-bold">Réservations</h2>
+                                    <ManualReservationModal
+                                        representationId={representation.id}
+                                        onSuccess={() => {
+                                            fetchRepresentation()
+                                            setRefreshTrigger(prev => prev + 1)
+                                        }}
+                                    />
+                                </div>
+
+                                <ReservationList
+                                    reservations={representation.reservations || []}
+                                    onRefresh={() => {
+                                        fetchRepresentation()
+                                        setRefreshTrigger(prev => prev + 1)
+                                    }}
+                                />
+                            </div>
                         </div>
 
-                        <ReservationList
-                            reservations={representation.reservations || []}
-                        />
+                        {/* Plan de salle visuel - 1/3 sticky */}
+                        <div className="lg:col-span-1">
+                            <div className="sticky top-4">
+                                <div className="bg-white rounded-lg border p-4">
+                                    <h2 className="text-lg font-semibold mb-4">Plan de salle</h2>
+                                    <SeatingPlanViewer
+                                        representationId={representation.id}
+                                        refreshTrigger={refreshTrigger}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </>
             ) : view === 'edit' ? (

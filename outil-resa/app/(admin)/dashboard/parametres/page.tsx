@@ -89,7 +89,7 @@ export default function ParametresPage() {
     if (loading) return <div className="p-8">Chargement...</div>
 
     return (
-        <div className="p-8 max-w-4xl mx-auto">
+        <div className="p-8 max-w-[1600px] mx-auto">
             <h1 className="text-3xl font-bold mb-2">Paramètres</h1>
             <p className="text-slate-600 mb-8">
                 Gérez les informations de votre association
@@ -149,8 +149,10 @@ export default function ParametresPage() {
                         <div className="grid md:grid-cols-2 gap-6">
                             {/* Logo */}
                             <div className="space-y-4">
-                                <Label>Logo de l'association</Label>
+                                <Label>Logo de l&apos;association</Label>
+                                <p className="text-sm text-slate-500">Affiché en haut de votre page publique</p>
                                 <ImageUpload
+                                    id="logo-upload"
                                     value={formData.logo}
                                     onChange={(url) => setFormData({ ...formData, logo: url })}
                                     folder="associations/logos"
@@ -161,7 +163,9 @@ export default function ParametresPage() {
                             {/* Affiche */}
                             <div className="space-y-4">
                                 <Label>Affiche du spectacle</Label>
+                                <p className="text-sm text-slate-500">Affichée à gauche sur votre page publique</p>
                                 <ImageUpload
+                                    id="affiche-upload"
                                     value={formData.affiche}
                                     onChange={(url) => setFormData({ ...formData, affiche: url })}
                                     folder="associations/affiches"

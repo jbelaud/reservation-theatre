@@ -3,7 +3,7 @@
 
 import { format, isPast } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Edit, Trash2, Eye, Calendar, Clock } from 'lucide-react'
+import { Trash2, Eye, Calendar, Clock } from 'lucide-react'
 
 import {
     Table,
@@ -32,14 +32,12 @@ interface Representation {
 interface RepresentationTableProps {
     representations: Representation[]
     onView: (id: string) => void
-    onEdit: (id: string) => void
     onDelete: (id: string) => void
 }
 
 export function RepresentationTable({
     representations,
     onView,
-    onEdit,
     onDelete,
 }: RepresentationTableProps) {
     if (representations.length === 0) {
@@ -156,15 +154,6 @@ export function RepresentationTable({
                                             className="hover:bg-blue-50 hover:text-blue-700"
                                         >
                                             <Eye className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => onEdit(rep.id)}
-                                            title="Modifier"
-                                            className="hover:bg-gray-100"
-                                        >
-                                            <Edit className="h-4 w-4" />
                                         </Button>
                                         <Button
                                             variant="ghost"

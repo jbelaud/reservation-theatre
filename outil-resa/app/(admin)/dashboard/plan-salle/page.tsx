@@ -70,7 +70,7 @@ export default function PlanSallePage() {
     if (loading) return <div className="p-8">Chargement...</div>
 
     return (
-        <div className="p-8 max-w-6xl mx-auto">
+        <div className="p-8 max-w-[1600px] mx-auto">
             <h1 className="text-3xl font-bold mb-2">Configuration de la salle</h1>
             <p className="text-slate-600 mb-8">
                 Définissez la structure de votre salle. Cette configuration sera utilisée pour le placement automatique.

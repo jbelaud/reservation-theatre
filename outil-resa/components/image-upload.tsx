@@ -10,14 +10,17 @@ interface ImageUploadProps {
     onChange: (url: string) => void
     folder?: string
     label?: string
+    id?: string
 }
 
-export function ImageUpload({ value, onChange, folder = 'associations', label = 'Télécharger une image' }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, folder = 'associations', label = 'Télécharger une image', id }: ImageUploadProps) {
     const [isUploading, setIsUploading] = useState(false)
+    const widgetId = id || `upload-${folder.replace(/\//g, '-')}`
 
     return (
         <div className="space-y-4">
             <CldUploadWidget
+                key={widgetId}
                 uploadPreset="ml_default"
                 options={{
                     folder: folder,

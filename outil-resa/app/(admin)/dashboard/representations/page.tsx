@@ -71,6 +71,15 @@ export default function RepresentationsPage() {
         fetchRepresentations()
     }, [])
 
+    // Rafraîchir les données quand la page redevient visible (retour de la page détail)
+    useEffect(() => {
+        const handleFocus = () => {
+            fetchRepresentations()
+        }
+        window.addEventListener('focus', handleFocus)
+        return () => window.removeEventListener('focus', handleFocus)
+    }, [])
+
     const fetchRepresentations = async () => {
         try {
             setLoading(true)
@@ -90,10 +99,6 @@ export default function RepresentationsPage() {
     }
 
     const handleView = (id: string) => {
-        router.push(`/dashboard/representations/${id}`)
-    }
-
-    const handleEdit = (id: string) => {
         router.push(`/dashboard/representations/${id}`)
     }
 
@@ -155,7 +160,7 @@ export default function RepresentationsPage() {
     }
 
     return (
-        <div className="p-8">
+        <div className="p-8 max-w-[1600px] mx-auto">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">Mes représentations</h1>
@@ -201,7 +206,6 @@ export default function RepresentationsPage() {
             <RepresentationTable
                 representations={filteredRepresentations}
                 onView={handleView}
-                onEdit={handleEdit}
                 onDelete={handleDeleteClick}
             />
 

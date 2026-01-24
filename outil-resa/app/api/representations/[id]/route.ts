@@ -178,7 +178,7 @@ export async function GET(
             } else if (Array.isArray(r.sieges)) {
                 sieges = r.sieges
             }
-            return { ...r, sieges }
+            return { ...r, sieges, representationId: id }
         })
 
         // Déterminer la structure à utiliser (override ou défaut)

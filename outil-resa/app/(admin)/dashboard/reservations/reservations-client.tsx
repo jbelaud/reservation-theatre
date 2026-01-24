@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ReservationList } from '@/components/reservation-list'
 import { ManualReservationModal } from '@/components/manual-reservation-modal'
+import { SeatingPlanViewer } from '@/components/seating-plan-viewer'
 import {
     Select,
     SelectContent,
@@ -21,8 +22,19 @@ export function ReservationsClient({
 }) {
     const router = useRouter()
 
-    const [selectedYear, setSelectedYear] = useState<string>('all')
-    const [selectedRepresentationId, setSelectedRepresentationId] = useState<string>('all')
+    // Trouver la représentation à venir la plus proche (ou la plus récente si aucune à venir)
+    const now = new Date()
+    const upcomingReps = representations
+        .filter(r => new Date(r.rawDate) >= now)
+        .sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
+    
+    const defaultRepId = upcomingReps.length > 0 
+        ? upcomingReps[0].id 
+        : (representations.length > 0 ? representations[0].id : '')
+
+    const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
+    const [selectedRepresentationId, setSelectedRepresentationId] = useState<string>(defaultRepId)
+    const [refreshTrigger, setRefreshTrigger] = useState(0)
 
     // Extract unique years from representations
     const years = Array.from(new Set(representations.map(r => new Date(r.rawDate).getFullYear().toString()))).sort().reverse()
@@ -37,7 +49,7 @@ export function ReservationsClient({
             }
 
             // Filter by Representation
-            if (selectedRepresentationId !== 'all' && reservation.representationId !== selectedRepresentationId) {
+            if (reservation.representationId !== selectedRepresentationId) {
                 return false
             }
 
@@ -51,7 +63,12 @@ export function ReservationsClient({
 
         if (selectedYear !== 'all' && repDate.getFullYear().toString() !== selectedYear) return false
         return true
-    }).sort((a, b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime())
+    }).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
+
+    const handleReservationSuccess = () => {
+        router.refresh()
+        setRefreshTrigger(prev => prev + 1)
+    }
 
     return (
         <div className="space-y-6">
@@ -76,7 +93,6 @@ export function ReservationsClient({
                             <SelectValue placeholder="Représentation" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Toutes les représentations</SelectItem>
                             {filteredRepresentationOptions.map(rep => (
                                 <SelectItem key={rep.id} value={rep.id}>
                                     {rep.titre} - {rep.date} {rep.heure}
@@ -88,16 +104,37 @@ export function ReservationsClient({
 
                 <div className="flex justify-end">
                     <ManualReservationModal
+                        representationId={selectedRepresentationId}
                         representations={representations}
-                        onSuccess={() => router.refresh()}
+                        onSuccess={handleReservationSuccess}
                     />
                 </div>
             </div>
 
-            <ReservationList
-                reservations={filteredReservations}
-                showRepresentation={true}
-            />
+            {/* Layout 2/3 + 1/3 */}
+            <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                    <ReservationList
+                        reservations={filteredReservations}
+                        showRepresentation={false}
+                        onRefresh={handleReservationSuccess}
+                    />
+                </div>
+
+                {selectedRepresentationId && (
+                    <div className="lg:col-span-1">
+                        <div className="sticky top-4">
+                            <div className="bg-white rounded-lg border p-4">
+                                <h3 className="text-lg font-semibold mb-4">Plan de salle</h3>
+                                <SeatingPlanViewer
+                                    representationId={selectedRepresentationId}
+                                    refreshTrigger={refreshTrigger}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
