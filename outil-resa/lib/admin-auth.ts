@@ -1,7 +1,11 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
-const SECRET_KEY = process.env.JWT_SECRET || 'votre-secret-tres-securise'
+if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET must be defined in environment variables')
+}
+
+const SECRET_KEY = process.env.JWT_SECRET
 const key = new TextEncoder().encode(SECRET_KEY)
 
 export async function generateAdminToken(adminId: string) {
@@ -17,7 +21,7 @@ export async function verifyAdminToken(token: string) {
         const { payload } = await jwtVerify(token, key)
         if (payload.role !== 'admin') return null
         return payload
-    } catch (error) {
+    } catch {
         return null
     }
 }

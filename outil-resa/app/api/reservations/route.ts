@@ -1,27 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { trouverPlaces } from '@/lib/placement'
 import { parsePlacesOccupees, parsePlanStructure, stringifyJsonField } from '@/lib/json-helpers'
 
+// Schéma de validation pour les réservations
+const reservationSchema = z.object({
+    representationId: z.string().min(1, 'ID de représentation requis'),
+    prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères'),
+    nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
+    telephone: z.string().regex(
+        /^(?:(?:\+|00)33|0)[1-9](?:[0-9]{8})$/,
+        'Numéro de téléphone français invalide (ex: 0612345678 ou +33612345678)'
+    ),
+    email: z.string().email('Email invalide').optional().or(z.literal('')),
+    nbPlaces: z.number().int().min(1, 'Au moins 1 place').max(10, 'Maximum 10 places par réservation'),
+    sieges: z.array(z.string()).optional(),
+    pmr: z.boolean().optional(),
+    nbPmr: z.number().int().min(0).optional()
+})
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { representationId, prenom, nom, telephone, email, nbPlaces, sieges, pmr, nbPmr } = body
-
-        // 1. Validation basique
-        if (!representationId || !prenom || !nom || !telephone || !nbPlaces) {
+        
+        // Validation avec Zod
+        const validation = reservationSchema.safeParse(body)
+        if (!validation.success) {
             return NextResponse.json(
-                { error: 'Tous les champs obligatoires doivent être remplis' },
+                { 
+                    error: 'Données invalides', 
+                    details: validation.error.issues.map(issue => ({
+                        field: issue.path.join('.'),
+                        message: issue.message
+                    }))
+                },
                 { status: 400 }
             )
         }
 
-        if (nbPlaces < 1 || nbPlaces > 50) {
-            return NextResponse.json(
-                { error: 'Le nombre de places doit être compris entre 1 et 50' },
-                { status: 400 }
-            )
-        }
+        const { representationId, prenom, nom, telephone, email, nbPlaces, sieges, pmr, nbPmr } = validation.data
 
         // Déterminer le nombre de places PMR demandées
         // Si nbPmr est fourni (nouvelle interface publique), on l'utilise

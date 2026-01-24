@@ -1,15 +1,16 @@
 import { SignJWT, jwtVerify } from 'jose'
 
-const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'fallback-secret'
-)
+if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET must be defined in environment variables')
+}
+
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export async function verifyToken(token: string): Promise<{ associationId: string } | null> {
     try {
         const { payload } = await jwtVerify(token, JWT_SECRET)
         return payload as { associationId: string }
-    } catch (error) {
-        console.error('Token verification failed:', error)
+    } catch {
         return null
     }
 }
