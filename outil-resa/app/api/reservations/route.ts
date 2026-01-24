@@ -171,7 +171,41 @@ export async function POST(request: NextRequest) {
             placesAttribuees = placesAuto
         }
 
-        // 5. Créer la réservation et mettre à jour la représentation (Transaction)
+        // 5. Identifier les sièges PMR dans les places attribuées
+        let finalStructureForPmr = (representation as any).structure
+        if (!finalStructureForPmr) {
+            finalStructureForPmr = representation.association.plansSalle[0]?.structure
+        }
+        const structurePlanForPmr = parsePlanStructure(finalStructureForPmr)
+
+        // Récupérer les places PMR actuelles
+        let placesPmrActuelles = []
+        if (typeof representation.placesPmr === 'string') {
+            try {
+                placesPmrActuelles = JSON.parse(representation.placesPmr)
+            } catch {
+                placesPmrActuelles = []
+            }
+        } else if (Array.isArray(representation.placesPmr)) {
+            placesPmrActuelles = representation.placesPmr
+        }
+
+        // Identifier les sièges PMR dans les places attribuées
+        const nouveauxSiegesPmr: string[] = []
+        for (const seatId of placesAttribuees) {
+            const match = seatId.match(/^([A-Z]+)(\d+)$/)
+            if (match) {
+                const rowId = match[1]
+                const seatNum = parseInt(match[2])
+                const row = structurePlanForPmr.rangees.find(r => r.id === rowId)
+                
+                if (row && row.pmr?.includes(seatNum)) {
+                    nouveauxSiegesPmr.push(seatId)
+                }
+            }
+        }
+
+        // 6. Créer la réservation et mettre à jour la représentation (Transaction)
         const result = await prisma.$transaction(async (tx) => {
             // Créer réservation
             const reservation = await tx.reservation.create({
@@ -188,11 +222,12 @@ export async function POST(request: NextRequest) {
                 }
             })
 
-            // Mettre à jour places occupées
+            // Mettre à jour places occupées ET places PMR
             await tx.representation.update({
                 where: { id: representationId },
                 data: {
-                    placesOccupees: stringifyJsonField([...placesOccupeesActuelles, ...placesAttribuees])
+                    placesOccupees: stringifyJsonField([...placesOccupeesActuelles, ...placesAttribuees]),
+                    placesPmr: stringifyJsonField([...placesPmrActuelles, ...nouveauxSiegesPmr])
                 }
             })
 

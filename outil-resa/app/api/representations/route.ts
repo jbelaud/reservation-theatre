@@ -123,9 +123,8 @@ export async function GET(request: NextRequest) {
             const nbPmrReserves = placesPmrArray.length
             const capaciteVente = rep.capacite - nbPmrReserves
 
-            // Calculer le nombre de tickets vendus
-            // = places occupées - places PMR (car PMR prend 2 places physiques)
-            const ticketsVendus = placesOccupeesArray.length - nbPmrReserves
+            // Calculer le nombre de tickets vendus (somme des nbPlaces des réservations)
+            const ticketsVendus = rep.reservations?.reduce((acc: number, r: any) => acc + (r.nbPlaces || 0), 0) || 0
 
             const placesRestantes = capaciteVente - ticketsVendus
 

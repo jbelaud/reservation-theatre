@@ -20,6 +20,7 @@ interface Representation {
     capacite: number
     description?: string
     placesOccupees: unknown
+    placesRestantes?: number // Calculé par l'API
 }
 
 interface Association {
@@ -97,7 +98,7 @@ export default function AssociationPage({
                 </p>
             </div>
 
-            <div className="grid md:grid-cols-12 gap-8">
+            <div className="grid md:grid-cols-12 gap-8 items-start">
                 {/* Colonne de gauche : Affiche */}
                 <div className="md:col-span-5">
                     {association.affiche ? (
@@ -126,8 +127,10 @@ export default function AssociationPage({
                         </Card>
                     ) : (
                         association.representations.map((representation: Representation) => {
+                            // Utiliser placesRestantes de l'API si disponible (calcul dynamique avec PMR)
+                            // Sinon fallback sur capacité - places occupées
                             const placesOccupees = parsePlacesOccupees(representation.placesOccupees)
-                            const placesRestantes = representation.capacite - placesOccupees.length
+                            const placesRestantes = representation.placesRestantes ?? (representation.capacite - placesOccupees.length)
 
                             return (
                                 <Card key={representation.id} className="flex flex-col md:flex-row items-center justify-between p-6 hover:shadow-md transition-shadow">

@@ -37,6 +37,8 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
             const planRes = await fetch('/api/plan-salle')
             const planData = await planRes.json()
 
+            console.log('🔍 [SeatingPlanSelector] Plan data reçu:', planData)
+
             // Parser la structure (peut être un String en SQLite ou un Object en Postgres)
             let structure = planData.structure
             if (typeof structure === 'string') {
@@ -46,6 +48,9 @@ export function SeatingPlanSelector({ representationId, nbPlaces, onSeatsSelecte
                     structure = { rangees: [] }
                 }
             }
+
+            console.log('🔍 [SeatingPlanSelector] Structure parsée:', structure)
+            console.log('🔍 [SeatingPlanSelector] Rangées avec PMR:', structure?.rangees?.map((r: any) => ({ id: r.id, pmr: r.pmr })))
 
             setPlanStructure({
                 rangees: structure?.rangees || [],

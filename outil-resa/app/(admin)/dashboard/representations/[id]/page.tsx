@@ -119,18 +119,12 @@ export default function RepresentationDetailPage({
         if (!representationId) return
 
         try {
-            // Calculer la nouvelle capacité basée sur le plan
-            // Si PMR prend 2 places, chaque place PMR réduit la capacité de 1 ticket supplémentaire
-            const physical = structure.rangees.reduce(
+            // Calculer la capacité = nombre total de sièges physiques
+            // La capacité de vente dynamique (avec PMR réservés) est calculée à l'affichage
+            const nouvelleCapacite = structure.rangees.reduce(
                 (acc: number, row: any) => acc + (row.sieges || 0),
                 0
             )
-            const pmrCount = structure.rangees.reduce(
-                (acc: number, row: any) => acc + (row.pmr?.length || 0),
-                0
-            )
-
-            const nouvelleCapacite = structure.pmrDouble ? physical - pmrCount : physical
 
             const response = await fetch(`/api/representations/${representationId}`, {
                 method: 'PUT',
@@ -139,7 +133,7 @@ export default function RepresentationDetailPage({
                 },
                 body: JSON.stringify({
                     structure: JSON.stringify(structure),
-                    capacite: nouvelleCapacite // On synchronise la capacité
+                    capacite: nouvelleCapacite
                 }),
             })
 

@@ -42,7 +42,9 @@ export function SeatingPlanEditor({
 
     const totalPmr = rangees.reduce((acc, r) => acc + (r.pmr?.length || 0), 0)
     const totalPhysicalPlaces = rangees.reduce((acc, r) => acc + r.sieges, 0)
-    const totalPlaces = pmrDouble ? totalPhysicalPlaces - totalPmr : totalPhysicalPlaces
+    // La capacité de vente = nombre total de sièges physiques
+    // Les PMR ne réduisent la capacité que lorsqu'ils sont effectivement réservés
+    const totalPlaces = totalPhysicalPlaces
 
     // State pour les inputs PMR (permet de taper "1-5" sans que ça se convertisse immédiatement)
     const [pmrInputs, setPmrInputs] = useState<Record<number, string>>(() => {
@@ -185,7 +187,7 @@ export function SeatingPlanEditor({
     }
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 pb-32">
+        <div className="grid gap-6 md:grid-cols-2 pb-32 items-start">
             {/* Éditeur */}
             <Card>
                 <CardHeader>
@@ -446,7 +448,8 @@ export function SeatingPlanEditor({
                 </div>
             )}
 
-            {/* Prévisualisation */}
+            {/* Prévisualisation - Position sticky pour rester visible */}
+            <div className="sticky top-4">
             <Card>
                 <CardHeader>
                     <CardTitle>Aperçu de la salle</CardTitle>
@@ -545,6 +548,7 @@ export function SeatingPlanEditor({
                     </div>
                 </CardContent>
             </Card>
+            </div>
         </div>
     )
 }

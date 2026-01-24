@@ -138,8 +138,8 @@ export function ReservationModal({ open, onOpenChange, representationId, onReser
                         <DialogDescription>Chargement...</DialogDescription>
                     ) : representation ? (
                         <DialogDescription className="text-sm text-slate-600">
-                            <p className="font-medium">{representation.titre}</p>
-                            <p>📅 {format(new Date(representation.date), 'EEEE d MMMM yyyy', { locale: fr })} à {representation.heure}</p>
+                            <span className="font-medium block">{representation.titre}</span>
+                            <span className="block">📅 {format(new Date(representation.date), 'EEEE d MMMM yyyy', { locale: fr })} à {representation.heure}</span>
                         </DialogDescription>
                     ) : null}
                 </DialogHeader>
