@@ -45,7 +45,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.554.0",
     "nanoid": "^5.1.6",
-    "next": "16.0.7",
+    "next": "16.0.10",
     "next-cloudinary": "^6.17.5",
     "prisma": "^5.22.0",
     "react": "19.2.0",
