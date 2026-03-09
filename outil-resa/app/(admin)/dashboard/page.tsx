@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { LucideIcon, Calendar, Users, Percent, CreditCard } from 'lucide-react'
+import { LucideIcon, Calendar, Users, Percent, Copy, CreditCard } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth-edge'
+import { DashboardHeader } from '@/components/admin/dashboard-header'
 import {
     Dialog,
     DialogContent,
@@ -212,15 +213,18 @@ export default async function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB]">
-            <div className="max-w-[1600px] mx-auto px-8 py-8 space-y-8">
-                {/* Status Section */}
-                <div className="flex items-center justify-start">
+            {/* Header Section */}
+            <div className="bg-white border-b border-gray-200 px-8 py-2.5 mb-8">
+                <div className="flex items-center justify-between">
                     <LicenceStatus
                         active={data.licenceActive}
                         expireDate={data.licenceExpire ? data.licenceExpire.toISOString() : undefined}
                     />
+                    <DashboardHeader associationName={data.associationName} />
                 </div>
+            </div>
 
+            <div className="max-w-[1600px] mx-auto px-8 space-y-8">
                 {/* Stats de l'année en cours */}
                 <div className="grid gap-6 md:grid-cols-3">
                     <StatCard

@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import {
     Popover,
     PopoverContent,
@@ -14,10 +12,9 @@ import {
 
 interface DashboardHeaderProps {
     associationName: string
-    isSidebar?: boolean
 }
 
-export function DashboardHeader({ associationName, isSidebar = false }: DashboardHeaderProps) {
+export function DashboardHeader({ associationName }: DashboardHeaderProps) {
     const router = useRouter()
     const [isOpen, setIsOpen] = useState(false)
 
@@ -32,47 +29,26 @@ export function DashboardHeader({ associationName, isSidebar = false }: Dashboar
     }
 
     return (
-        <div className={cn("flex items-center", isSidebar ? "w-full" : "justify-end")}>
-            {!isSidebar && (
-                <div className="flex items-center gap-2 mr-auto">
-                    <Image
-                        src="/resavo-logo.png"
-                        alt="Resavo"
-                        width={120}
-                        height={40}
-                        className="h-10 w-auto object-contain"
-                    />
-                </div>
-            )}
+        <div className="flex justify-end items-center">
             <Popover open={isOpen} onOpenChange={setIsOpen}>
                 <PopoverTrigger asChild>
-                    <div className={cn(
-                        "flex items-center gap-3 cursor-pointer hover:bg-gray-100/50 p-1.5 rounded-lg transition-colors group",
-                        isSidebar ? "w-full" : ""
-                    )}>
-                        <div className={cn(
-                            "h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm ring-1 ring-gray-100 group-hover:ring-gray-200 transition-all shrink-0 relative",
-                        )}>
-                            <Image
-                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${associationName}`}
-                                alt="Avatar"
-                                fill
-                                className="object-cover"
-                            />
-                        </div>
-                        <div className={cn("text-left overflow-hidden", isSidebar ? "flex-1" : "hidden sm:block")}>
-                            {!isSidebar && <span className="block text-xs text-gray-400 uppercase tracking-wider font-semibold">Bonjour</span>}
-                            <span className="block text-sm font-bold text-gray-900 truncate">{associationName}</span>
+                    <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors group">
+                        <div className="text-right hidden sm:block">
+                            <span className="block text-sm font-medium text-gray-900">Bonjour, {associationName}</span>
                             <span className="block text-xs text-gray-500">Administrateur</span>
                         </div>
-                        <ChevronDown className={cn(
-                            "h-4 w-4 text-gray-400 transition-transform duration-200 shrink-0",
-                            isOpen ? "rotate-180" : ""
-                        )} />
+                        <div className="h-9 w-9 rounded-full bg-yellow-100 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm ring-1 ring-gray-100 group-hover:ring-gray-200 transition-all">
+                            <img
+                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${associationName}`}
+                                alt="Avatar"
+                                className="h-full w-full object-cover"
+                            />
+                        </div>
+                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                     </div>
                 </PopoverTrigger>
-                <PopoverContent className="w-56 p-2" align={isSidebar ? "center" : "end"} side={isSidebar ? "top" : "bottom"}>
-                    <div className="px-2 py-1.5 text-xs font-medium text-gray-500 border-b border-gray-100 mb-1">
+                <PopoverContent className="w-56 p-2" align="end">
+                    <div className="px-2 py-1.5 text-sm font-medium text-gray-500 border-b border-gray-100 mb-1">
                         Mon compte
                     </div>
                     <Button
