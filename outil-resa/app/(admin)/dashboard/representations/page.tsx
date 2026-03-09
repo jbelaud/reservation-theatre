@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select'
 import { CreateRepresentationDialog } from '@/components/create-representation-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DashboardHeader } from '@/components/admin/dashboard-header'
 
 interface Representation {
     id: string
@@ -66,10 +67,25 @@ export default function RepresentationsPage() {
         return total + placesReservees
     }, 0)
 
+    const [associationName, setAssociationName] = useState('Théâtre')
+
     // Charger les représentations
     useEffect(() => {
         fetchRepresentations()
+        fetchAssociation()
     }, [])
+
+    const fetchAssociation = async () => {
+        try {
+            const res = await fetch('/api/association')
+            if (res.ok) {
+                const data = await res.json()
+                setAssociationName(data.nom || 'Théâtre')
+            }
+        } catch (err) {
+            console.error('Failed to fetch association', err)
+        }
+    }
 
     // Rafraîchir les données quand la page redevient visible (retour de la page détail)
     useEffect(() => {
@@ -160,84 +176,93 @@ export default function RepresentationsPage() {
     }
 
     return (
-        <div className="p-8 max-w-[1600px] mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold">Mes représentations</h1>
-                    <p className="text-gray-600 mt-2">
-                        Gérez vos représentations et suivez les réservations
-                    </p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <Select value={selectedYear} onValueChange={setSelectedYear}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Filtrer par année" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Toutes les années</SelectItem>
-                            {years.map((year) => (
-                                <SelectItem key={year} value={year}>
-                                    {year}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-
-                    <CreateRepresentationDialog onSuccess={fetchRepresentations} />
+        <div className="min-h-screen bg-[#F9FAFB]">
+            {/* Header Section */}
+            <div className="bg-white border-b border-gray-200 px-8 py-2.5 mb-8">
+                <div className="flex items-center justify-end">
+                    <DashboardHeader associationName={associationName} />
                 </div>
             </div>
 
-            {/* KPI - Total des places réservées */}
-            <Card className="mb-6">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                        Places réservées {selectedYear !== 'all' ? `en ${selectedYear}` : 'au total'}
-                    </CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">{totalPlacesReservees.toLocaleString('fr-FR')}</div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                        Sur {filteredRepresentations.length} représentation{filteredRepresentations.length > 1 ? 's' : ''}
-                    </p>
-                </CardContent>
-            </Card>
+            <div className="p-8 max-w-[1600px] mx-auto pt-0">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold">Mes représentations</h1>
+                        <p className="text-gray-600 mt-2">
+                            Gérez vos représentations et suivez les réservations
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Select value={selectedYear} onValueChange={setSelectedYear}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Filtrer par année" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Toutes les années</SelectItem>
+                                {years.map((year) => (
+                                    <SelectItem key={year} value={year}>
+                                        {year}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
-            <RepresentationTable
-                representations={filteredRepresentations}
-                onView={handleView}
-                onDelete={handleDeleteClick}
-            />
+                        <CreateRepresentationDialog onSuccess={fetchRepresentations} />
+                    </div>
+                </div>
 
-            {/* Dialog de confirmation de suppression */}
-            <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Confirmer la suppression</DialogTitle>
-                        <DialogDescription>
-                            Êtes-vous sûr de vouloir supprimer cette représentation ?
-                            Toutes les réservations associées seront également supprimées.
-                            Cette action est irréversible.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setDeleteId(null)}
-                            disabled={deleting}
-                        >
-                            Annuler
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDeleteConfirm}
-                            disabled={deleting}
-                        >
-                            {deleting ? 'Suppression...' : 'Supprimer'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                {/* KPI - Total des places réservées */}
+                <Card className="mb-6">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Places réservées {selectedYear !== 'all' ? `en ${selectedYear}` : 'au total'}
+                        </CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-blue-600">{totalPlacesReservees.toLocaleString('fr-FR')}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Sur {filteredRepresentations.length} représentation{filteredRepresentations.length > 1 ? 's' : ''}
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <RepresentationTable
+                    representations={filteredRepresentations}
+                    onView={handleView}
+                    onDelete={handleDeleteClick}
+                />
+
+                {/* Dialog de confirmation de suppression */}
+                <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Confirmer la suppression</DialogTitle>
+                            <DialogDescription>
+                                Êtes-vous sûr de vouloir supprimer cette représentation ?
+                                Toutes les réservations associées seront également supprimées.
+                                Cette action est irréversible.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setDeleteId(null)}
+                                disabled={deleting}
+                            >
+                                Annuler
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleDeleteConfirm}
+                                disabled={deleting}
+                            >
+                                {deleting ? 'Suppression...' : 'Supprimer'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </div>
     )
 }
