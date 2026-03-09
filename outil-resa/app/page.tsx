@@ -169,12 +169,14 @@ export default function LandingPage() {
                   </ul>
                 </div>
               </div>
-              <div className="bg-slate-100 rounded-2xl p-8 aspect-square flex items-center justify-center relative shadow-inner">
-                {/* Placeholder visuel */}
-                <div className="absolute inset-0 bg-slate-200 rounded-2xl animate-pulse"></div>
-                <div className="relative z-10 text-slate-400 font-medium">
-                  Capture d&apos;écran Interface (Plan de Salle)
-                </div>
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <Image
+                  src="/plan-salle.png"
+                  alt="Plan de salle interactif Resavo"
+                  width={600}
+                  height={600}
+                  className="w-full h-auto object-contain"
+                />
               </div>
             </div>
           </div>
