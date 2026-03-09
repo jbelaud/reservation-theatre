@@ -1,4 +1,5 @@
 import { Sidebar } from '@/components/admin/sidebar'
+import { DashboardHeader } from '@/components/admin/dashboard-header'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth-edge'
 import { prisma } from '@/lib/prisma'
@@ -37,11 +38,16 @@ export default async function AdminLayout({
     return (
         <div className="flex h-screen bg-gray-50/30">
             <Sidebar associationName={associationName} />
-            <main className="flex-1 overflow-y-auto">
-                <div className="h-full">
-                    {children}
-                </div>
-            </main>
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                <header className="h-16 border-b bg-white/80 backdrop-blur-md flex items-center justify-end px-8 z-10 shrink-0">
+                    <DashboardHeader associationName={associationName} />
+                </header>
+                <main className="flex-1 overflow-y-auto">
+                    <div className="h-full">
+                        {children}
+                    </div>
+                </main>
+            </div>
         </div>
     )
 }
