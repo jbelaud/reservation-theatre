@@ -26,13 +26,12 @@ export function Sidebar({ associationName }: SidebarProps) {
     <div className="flex h-full w-64 flex-col bg-[#F3F4F6] border-r border-gray-200">
       <div className="flex h-20 items-center justify-center px-6">
         <Image
-          src="/icon.png"
+          src="/resavo-logo.png"
           alt="Resavo Logo"
-          width={40}
-          height={40}
-          className="object-contain rounded-lg"
+          width={150}
+          height={60}
+          className="h-16 w-auto object-contain"
         />
-        <span className="ml-2 font-bold text-xl text-primary">Resavo</span>
       </div>
 
       <div className="flex-1 overflow-y-auto py-6 px-4">

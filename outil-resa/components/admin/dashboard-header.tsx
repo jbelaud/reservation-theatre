@@ -33,6 +33,17 @@ export function DashboardHeader({ associationName, isSidebar = false }: Dashboar
 
     return (
         <div className={cn("flex items-center", isSidebar ? "w-full" : "justify-end")}>
+            {!isSidebar && (
+                <div className="flex items-center gap-2 mr-auto">
+                    <Image
+                        src="/resavo-logo.png"
+                        alt="Resavo"
+                        width={120}
+                        height={40}
+                        className="h-10 w-auto object-contain"
+                    />
+                </div>
+            )}
             <Popover open={isOpen} onOpenChange={setIsOpen}>
                 <PopoverTrigger asChild>
                     <div className={cn(

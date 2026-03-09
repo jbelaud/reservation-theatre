@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, Users, Percent, Copy, CreditCard } from 'lucide-react'
+import { LucideIcon, Calendar, Users, Percent, CreditCard } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +15,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth-edge'
-import { DashboardHeader } from '@/components/admin/dashboard-header'
 import {
     Dialog,
     DialogContent,
@@ -213,18 +212,15 @@ export default async function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB]">
-            {/* Header Section */}
-            <div className="bg-white border-b border-gray-200 px-8 py-2.5 mb-8">
-                <div className="flex items-center justify-between">
+            <div className="max-w-[1600px] mx-auto px-8 py-8 space-y-8">
+                {/* Status Section */}
+                <div className="flex items-center justify-start">
                     <LicenceStatus
                         active={data.licenceActive}
                         expireDate={data.licenceExpire ? data.licenceExpire.toISOString() : undefined}
                     />
-                    <DashboardHeader associationName={data.associationName} />
                 </div>
-            </div>
 
-            <div className="max-w-[1600px] mx-auto px-8 space-y-8">
                 {/* Stats de l'année en cours */}
                 <div className="grid gap-6 md:grid-cols-3">
                     <StatCard
@@ -377,7 +373,7 @@ export default async function DashboardPage() {
     )
 }
 
-function StatCard({ title, value, icon: Icon }: any) {
+function StatCard({ title, value, icon: Icon }: { title: string, value: string | number, icon: LucideIcon }) {
     return (
         <Card className="border border-gray-100 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)] rounded-2xl relative overflow-hidden group hover:shadow-md transition-shadow bg-white">
             <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600 w-16 rounded-br-full" />
@@ -405,7 +401,7 @@ function LicenceStatus({ active, expireDate }: { active: boolean, expireDate?: s
                     <span className="text-red-500 text-xs">Votre compte est désactivé</span>
                 </div>
                 <Button variant="destructive" size="sm">
-                    Contacter l'administrateur
+                    Contacter l&apos;administrateur
                 </Button>
             </div>
         )
@@ -423,7 +419,7 @@ function LicenceStatus({ active, expireDate }: { active: boolean, expireDate?: s
                 </span>
                 {expire && (
                     <span className={`text-xs ${isExpiringSoon ? 'text-orange-600' : 'text-green-600'}`}>
-                        Jusqu'au {expire.toLocaleDateString('fr-FR')}
+                        Jusqu&apos;au {expire.toLocaleDateString('fr-FR')}
                     </span>
                 )}
             </div>
